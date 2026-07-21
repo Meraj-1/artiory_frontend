@@ -10,7 +10,7 @@ const sections = [
   { id: "third-party", title: "Third-Party Websites", index: "07" },
   { id: "grievance", title: "Grievance Officer", index: "08" },
   { id: "updates", title: "Updates to this Policy", index: "09" },
-  { id: "jurisdiction", title: "Jurisdiction", index: "10" },
+  { id: "jurisdiction", title: "Jurisdiction", index: "10" }
 ];
 
 function Section({
@@ -393,10 +393,9 @@ export default function Page() {
 
           <Section id="jurisdiction" index="10" title="Jurisdiction">
             <p>
-              Your use of www.artiory.com and any disputes arising from it shall be
-              governed by the laws of India. All disputes shall be subject to the
-              exclusive jurisdiction of the competent courts where Artiory operates
-              its principal place of business.
+              Your use of www.artiory.com and any dispute arising from it shall be governed by and construed in accordance with the laws of India.
+
+Any disputes, claims, or legal proceedings arising out of or relating to the use of this website, its products, or services shall be subject to the exclusive jurisdiction of the Hon'ble High Court of Bombay and the courts subordinate to it, and all parties hereby submit to the jurisdiction of such courts.
             </p>
           </Section>
 
