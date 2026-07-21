@@ -1,0 +1,67 @@
+import React from "react";
+import Image from "next/image";
+import { Facebook, Youtube, Twitter, Instagram } from "lucide-react";
+import { Quicksand } from "next/font/google";
+import Link from "next/link";
+
+const quicksand = Quicksand({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"], // choose weights you need
+  display: "swap",
+});
+
+const Footer = () => {
+  return (
+    <footer className={`bg-white text-[#1e1e4d] py-12 px-6 mt-auto ${quicksand.className}`}>
+      <div className="max-w-8xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-15">
+        
+        {/* Left Section - Logo & Socials */}
+        <div className="flex flex-col items-center md:items-center">
+          <Image src="/Artiory-Logo.svg" className="cursor-pointer" alt="Logo" width={180} height={80} />
+          <div className="flex gap-4 mt-3">
+            <Link href="#"><Facebook className="text-[#4267B2] hover:scale-110 transition" size={28} /></Link>
+            <Link href="#"><Youtube className="text-[#FF0000] hover:scale-110 transition" size={28} /></Link>
+            <Link href="#"><Twitter className="text-[#1DA1F2] hover:scale-110 transition" size={28} /></Link>
+            <Link href="#"><Instagram className="text-[#E1306C] hover:scale-110 transition" size={28} /></Link>
+          </div>
+        </div>
+
+        {/* Middle Section - Links */}
+        <div className="grid grid-cols-2 gap-8 md:text-left">
+          <div>
+            <h3 className="font-bold text-lg mb-3">Quick Links</h3>
+            <ul className="space-y-1">
+              <li><Link href="/" className="hover:underline">Home</Link></li>
+              <li><Link href="/about" className="hover:underline">About us</Link></li>
+              <li><Link href="/listing" className="hover:underline">Products</Link></li>
+              <li><Link href="#" className="hover:underline">Mission</Link></li>
+              <li><Link href="#" className="hover:underline">Blog</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h3 className="font-bold text-lg mb-3">Important Links</h3>
+            <ul className="space-y-1">
+              <li><Link href="/privacy" className="hover:underline">Privacy Policy</Link></li>
+              <li><Link href="#" className="hover:underline">Shipping Policy</Link></li>
+              <li><Link href="#" className="hover:underline">Terms & Conditions</Link></li>
+              <li><Link href="#" className="hover:underline">Return & Refund Policy</Link></li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Right Section - Contact */}
+        <div className="md:text-left">
+          <h3 className="font-bold text-lg mb-3">Contact us</h3>
+          <p>1003 Bheema, Worli Sagar CHS,<br/>Sir Pochkhanawala Rd,<br/>Mumbai, Maharashtra 400018</p>
+          <p className="mt-3">
+            Email: <Link href="mailto:info@arttory.com" className="hover:underline">info@arttory.com</Link>
+          </p>
+          <p>Phone: <Link href="tel:+919820136133" className="hover:underline">098201 36133</Link></p>
+        </div>
+
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
