@@ -53,7 +53,7 @@ const RelatedProducts: React.FC = () => {
       ageGroup: "3+",
       rating: 4,
       category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kids.",
+      shortDescription: "Bright and colorful puzzle crayons for kid's.",
       description:
         "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
     },
@@ -92,9 +92,9 @@ const RelatedProducts: React.FC = () => {
       ageGroup: "3+",
       rating: 5,
       category: "Books",
-      shortDescription: "Fun coloring book for kids.",
+      shortDescription: "Fun coloring book for kid's.",
       description:
-        "Creative activity book with drawings to color, designed to inspire kids’ imagination.",
+        "Creative activity book with drawings to color, designed to inspire kid's’ imagination.",
     },
   ];
 

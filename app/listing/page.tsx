@@ -53,8 +53,8 @@ const product: Product[] = [
     category: "Educational Toys",
     image: "/products/1toys1.jpg",
     images: ["/products/1toys1.jpg", "/products/1toys2.jpg"],
-    shortDescription: "Bright and colorful puzzle crayons for kids.",
-    description: "Perfect for kids 3+, with fun shapes & colors.",
+    shortDescription: "Bright and colorful puzzle crayons for kid's.",
+    description: "Perfect for kid's 3+, with fun shapes & colors.",
   },
   {
     id: 2,
@@ -76,11 +76,11 @@ const product: Product[] = [
     price: 299,
     rating: 3,
     ageGroup: "4+",
-    category: "Hamper for Kids",
+    category: "Hamper for kid's",
     image: "/products/3toys1.jpg",
     images: ["/products/3toys1.jpg", "/products/3toys2.jpg"],
     shortDescription: "Ergonomically designed crayons for better grip.",
-    description: "Helps improve hand coordination for kids.",
+    description: "Helps improve hand coordination for kid's.",
   },
   {
     id: 4,
@@ -92,7 +92,7 @@ const product: Product[] = [
     image: "/products/4toys1.jpg",
     images: ["/products/4toys1.jpg", "/products/4toys2.jpg"],
     shortDescription: "Premium balance crayons with smooth finish.",
-    description: "Extra durability & smooth coloring for kids.",
+    description: "Extra durability & smooth coloring for kid's.",
   },
 ];
 
@@ -197,7 +197,7 @@ export default function ProductListPage() {
       </div>
 
       {/* Age Filter */}
-      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+      {/* <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
           <h3 className={`${londrina.className} font-semibold text-[#2e306a] tracking-wide text-sm uppercase`}>Age Group</h3>
         </div>
@@ -215,7 +215,7 @@ export default function ProductListPage() {
             </button>
           ))}
         </div>
-      </div>
+      </div> */}
 
       {activeFilterCount > 0 && (
         <button

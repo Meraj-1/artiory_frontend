@@ -9,10 +9,10 @@ const londrina = Londrina_Solid({
 });
 
 const products = [
-  { id: 1, img: "/trend/1.jpg", title: "Cute Flower Design Sunglass for kids", rating: "4.5 (2)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 99.00" },
+  { id: 1, img: "/trend/1.jpg", title: "Cute Flower Design Sunglass for kid's", rating: "4.5 (2)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 99.00" },
   { id: 2, img: "/trend/2.jpg", title: "Stylish Pink Sunglass for Girls", rating: "4.8 (5)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 149.00" },
   { id: 3, img: "/trend/3.jpg", title: "Cool Black Shades for Boys", rating: "4.3 (3)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 129.00" },
-  { id: 4, img: "/trend/4.jpg", title: "Trendy Oval Sunglass for Kids", rating: "4.7 (4)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 139.00" },
+  { id: 4, img: "/trend/4.jpg", title: "Trendy Oval Sunglass for kid's", rating: "4.7 (4)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 139.00" },
   { id: 5, img: "/trend/5.webp", title: "Cute Cartoon Sunglass", rating: "4.9 (6)", regularPrice: "Regular priceRs. 199.00", salePrice: "Rs. 159.00" },
 ];
 

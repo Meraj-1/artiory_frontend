@@ -13,7 +13,7 @@ const categories = [
   { img: "/category/1.png", title: "School Essentials" },
   { img: "/category/2.png", title: "Toys and Games" },
   { img: "/category/3.png", title: "Art & Craft" },
-  { img: "/category/4.png", title: "Hamper for kids" },
+  { img: "/category/4.png", title: "Hamper for kid's" },
   { img: "/category/5.png", title: "Baby Essentials" },
 ];
 

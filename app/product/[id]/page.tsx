@@ -18,7 +18,7 @@ const products = [
       "/products/1toys3.jpg",
       "/products/1toys4.jpg",
     ],
-    shortDescription: "Bright and colorful puzzle crayons for kids.",
+    shortDescription: "Bright and colorful puzzle crayons for kid's.",
     description:
       "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
   },

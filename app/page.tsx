@@ -23,7 +23,7 @@ export default function Home() {
       <TrendingReel/>
       <Reels />
       <Product/>
-      <Subscribe />
+      {/* <Subscribe /> */}
       {/* <Footer/> */}
     </>
   );

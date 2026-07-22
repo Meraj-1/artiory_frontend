@@ -18,11 +18,11 @@ const Footer = () => {
         {/* Left Section - Logo & Socials */}
         <div className="flex flex-col items-center md:items-center">
           <Image src="/Artiory-Logo.svg" className="cursor-pointer" alt="Logo" width={180} height={80} />
-          <div className="flex gap-4 mt-3">
-            <Link href="#"><Facebook className="text-[#4267B2] hover:scale-110 transition" size={28} /></Link>
-            <Link href="#"><Youtube className="text-[#FF0000] hover:scale-110 transition" size={28} /></Link>
-            <Link href="#"><Twitter className="text-[#1DA1F2] hover:scale-110 transition" size={28} /></Link>
-            <Link href="#"><Instagram className="text-[#E1306C] hover:scale-110 transition" size={28} /></Link>
+          <div className="flex gap-1 mt-3">
+            {/* <Link href="#"><Facebook className="text-[#4267B2] hover:scale-110 transition" size={28} /></Link> */}
+            <Link href="https://www.youtube.com/@artiory"><Youtube className="text-[#FF0000] hover:scale-110 transition" size={29} /></Link>
+            {/* <Link href="#"><Twitter className="text-[#1DA1F2] hover:scale-110 transition" size={28} /></Link> */}
+            <Link href="https://www.instagram.com/artiory.in/"><Instagram className="text-[#E1306C] hover:scale-110 transition" size={24} /></Link>
           </div>
         </div>
 
@@ -34,8 +34,8 @@ const Footer = () => {
               <li><Link href="/" className="hover:underline">Home</Link></li>
               <li><Link href="/about" className="hover:underline">About us</Link></li>
               <li><Link href="/listing" className="hover:underline">Products</Link></li>
-              <li><Link href="#" className="hover:underline">Mission</Link></li>
-              <li><Link href="#" className="hover:underline">Blog</Link></li>
+              {/* <li><Link href="#" className="hover:underline">Mission</Link></li> */}
+              {/* <li><Link href="#" className="hover:underline">Blog</Link></li> */}
             </ul>
           </div>
           <div>
@@ -43,8 +43,8 @@ const Footer = () => {
             <ul className="space-y-1">
               <li><Link href="/privacy" className="hover:underline">Privacy Policy</Link></li>
               <li><Link href="#" className="hover:underline">Shipping Policy</Link></li>
-              <li><Link href="#" className="hover:underline">Terms & Conditions</Link></li>
-              <li><Link href="#" className="hover:underline">Return & Refund Policy</Link></li>
+              {/* <li><Link href="#" className="hover:underline">Terms & Conditions</Link></li> */}
+              {/* <li><Link href="#" className="hover:underline">Return & Refund Policy</Link></li> */}
             </ul>
           </div>
         </div>
@@ -52,11 +52,11 @@ const Footer = () => {
         {/* Right Section - Contact */}
         <div className="md:text-left">
           <h3 className="font-bold text-lg mb-3">Contact us</h3>
-          <p>1003 Bheema, Worli Sagar CHS,<br/>Sir Pochkhanawala Rd,<br/>Mumbai, Maharashtra 400018</p>
+          <p>101 Chhadva residency, Plot no 7, Moti Baug<br/>Behind Maitri Park. Behind Ratna store, V N Purav<br/>Marg, Chembur, Mumbai 400071</p>
           <p className="mt-3">
-            Email: <Link href="mailto:info@arttory.com" className="hover:underline">info@arttory.com</Link>
+            Email: <Link href="mailto:info@arttory.com" className="hover:underline">contact@artiory.com</Link>
           </p>
-          <p>Phone: <Link href="tel:+919820136133" className="hover:underline">098201 36133</Link></p>
+          <p>Phone: <Link href="tel:+919820136133" className="hover:underline"> +91 81085 61836</Link></p>
         </div>
 
       </div>

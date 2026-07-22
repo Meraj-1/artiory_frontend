@@ -27,15 +27,15 @@ const Hero = () => {
           </p>
           <div>
             <p className="text-[#2e306a]">📍 Address</p>
-            <p className="text-[#2e306a]">123 Street, Your City, Country</p>
+            <p className="text-[#2e306a]">101 Chhadva residency, Plot no 7, Moti Baug, <br/> Behind Maitri Park. Behind Ratna store, <br/> V N Purav Marg, Chembur, Mumbai 400071</p>
           </div>
           <div>
             <p className="text-[#2e306a]">📞 Phone</p>
-            <p className="text-[#2e306a]">+91 98765 43210</p>
+            <p className="text-[#2e306a]">+91 81085 61836</p>
           </div>
           <div>
             <p className="text-[#2e306a]">✉️ Email</p>
-            <p className="text-[#2e306a]">support@yourstore.com</p>
+            <p className="text-[#2e306a]">contact@artiory.com</p>
           </div>
         </div>
 
@@ -86,7 +86,7 @@ const Hero = () => {
       </div>
 
       {/* Map Section */}
-      <div className="w-full max-w-6xl mt-10 rounded-2xl overflow-hidden shadow-md">
+      {/* <div className="w-full max-w-6xl mt-10 rounded-2xl overflow-hidden shadow-md">
         <iframe
           title="Google Map"
           className="w-full h-64 md:h-96"
@@ -94,7 +94,7 @@ const Hero = () => {
           allowFullScreen={true}
           loading="lazy"
         ></iframe>
-      </div>
+      </div> */}
     </section>
   );
 };

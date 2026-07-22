@@ -55,7 +55,7 @@ const Products: React.FC = () => {
       ageGroup: "3+",
       rating: 4,
       category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kids.",
+      shortDescription: "Bright and colorful puzzle crayons for kid's.",
       description:
         "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
     },
@@ -97,7 +97,7 @@ const Products: React.FC = () => {
       ageGroup: "3+",
       rating: 5,
       category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kids.",
+      shortDescription: "Bright and colorful puzzle crayons for kid's.",
       description:
         "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
     },
@@ -111,7 +111,7 @@ const Products: React.FC = () => {
       ageGroup: "3+",
       rating: 4,
       category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kids.",
+      shortDescription: "Bright and colorful puzzle crayons for kid's.",
       description:
         "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
     },
@@ -153,7 +153,7 @@ const Products: React.FC = () => {
       ageGroup: "3+",
       rating: 1,
       category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kids.",
+      shortDescription: "Bright and colorful puzzle crayons for kid's.",
       description:
         "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
     },
