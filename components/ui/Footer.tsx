@@ -42,9 +42,9 @@ const Footer = () => {
             <h3 className="font-bold text-lg mb-3">Important Links</h3>
             <ul className="space-y-1">
               <li><Link href="/privacy" className="hover:underline">Privacy Policy</Link></li>
-              <li><Link href="#" className="hover:underline">Shipping Policy</Link></li>
-              {/* <li><Link href="#" className="hover:underline">Terms & Conditions</Link></li> */}
-              {/* <li><Link href="#" className="hover:underline">Return & Refund Policy</Link></li> */}
+              <li><Link href="/shipping" className="hover:underline">Shipping Policy</Link></li>
+              <li><Link href="/terms" className="hover:underline">Terms & Conditions</Link></li>
+              <li><Link href="/return_refund" className="hover:underline">Return & Refund Policy</Link></li>
             </ul>
           </div>
         </div>

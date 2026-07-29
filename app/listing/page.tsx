@@ -35,7 +35,7 @@ type Product = {
   oldPrice?: number;
   image: string;
   images: string[];
-  rating: number;
+  // rating: number;
   category: string;
   shortDescription: string;
   description: string;
@@ -46,52 +46,52 @@ type Product = {
 const product: Product[] = [
   {
     id: 1,
-    name: "Puzzle Crayons",
+    name: "Jumbo Multicolored Crayon",
     price: 299,
-    rating: 3,
+    // rating: 3,
     ageGroup: "3+",
-    category: "Educational Toys",
+    category: "Crayons",
     image: "/products/1toys1.jpg",
     images: ["/products/1toys1.jpg", "/products/1toys2.jpg"],
-    shortDescription: "Bright and colorful puzzle crayons for kid's.",
+    shortDescription: "Bring your child's imagination to life with the Artiory Jumbo Multicolored Crayon Set. ",
     description: "Perfect for kid's 3+, with fun shapes & colors.",
   },
   {
     id: 2,
-    name: "Jumbo Multi-Colour Crayons",
+    name: "Crocodile Puzzle Crayon",
     price: 299,
     oldPrice: 399,
-    rating: 4,
+    // rating: 4,
     ageGroup: "3+",
-    category: "Toys and Games",
-    image: "/products/2toys1.jpg",
-    images: ["/products/2toys1.jpg", "/products/2toys3.jpg"],
-    shortDescription: "Large, easy-to-hold crayons in multiple colors.",
+    category: "Puzzle Crayons",
+    image: "/products/2toys1.JPG",
+    images: ["/products/2toys1.JPG", "/products/2toys3.JPG"],
+    shortDescription: "Unleash your child's creativity with the Artiory Dino Puzzle Crayon.",
     description: "Designed for little hands, vibrant & easy grip.",
     isSale: true,
   },
   {
     id: 3,
-    name: "Balance Crayons - Basic",
+    name: "Dino Puzzle Crayon",
     price: 299,
-    rating: 3,
+    // rating: 3,
     ageGroup: "4+",
-    category: "Hamper for kid's",
-    image: "/products/3toys1.jpg",
-    images: ["/products/3toys1.jpg", "/products/3toys2.jpg"],
+    category: "Puzzle Crayons",
+    image: "/products/3toys1.JPG",
+    images: ["/products/3toys1.JPG", "/products/3toys2.JPG"],
     shortDescription: "Ergonomically designed crayons for better grip.",
     description: "Helps improve hand coordination for kid's.",
   },
   {
     id: 4,
-    name: "Balance Crayons - Premium",
+    name: "Dino Puzzle Crayon",
     price: 349,
-    rating: 4,
+    // rating: 4,
     ageGroup: "3+",
-    category: "School Essentials",
-    image: "/products/4toys1.jpg",
-    images: ["/products/4toys1.jpg", "/products/4toys2.jpg"],
-    shortDescription: "Premium balance crayons with smooth finish.",
+    category: "Puzzle Crayons",
+    image: "/products/4toys1.JPG",
+    images: ["/products/4toys1.JPG", "/products/4toys2.JPG"],
+    shortDescription: "Spark your child's imagination with the Artiory Dino Puzzle",
     description: "Extra durability & smooth coloring for kid's.",
   },
 ];
@@ -147,7 +147,7 @@ export default function ProductListPage() {
 
   if (sortOption === "Price: Low to High") filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
   else if (sortOption === "Price: High to Low") filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
-  else if (sortOption === "Rating") filteredProducts = [...filteredProducts].sort((a, b) => b.rating - a.rating);
+  // else if (sortOption === "Rating") filteredProducts = [...filteredProducts].sort((a, b) => b.rating - a.rating);
 
   const activeFilterCount = (selectedCategory !== "All" ? 1 : 0) + (selectedAge !== "All" ? 1 : 0);
 
@@ -374,7 +374,7 @@ export default function ProductListPage() {
                           </h3>
                         </Link>
                         <p className="text-xs text-gray-400 line-clamp-1">{p.shortDescription}</p>
-                        <Rating value={p.rating} />
+                        {/* <Rating value={p.rating} /> */}
 
                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
                           <div className="flex items-baseline gap-1.5">

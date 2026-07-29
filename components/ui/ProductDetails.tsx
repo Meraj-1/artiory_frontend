@@ -21,7 +21,7 @@ type ProductType = {
   price: number;
   rating:number;
   sku: string;
-  ageGroup: string;
+  // ageGroup: string;
   category: string;
   shortDescription: string;
   description: string;
@@ -195,9 +195,9 @@ export default function ProductDetail({ product }: { product: ProductType }) {
           <RatingStars rating={product.rating} />
 
           <div>
-            <p className="font-light">{product.description}</p>
+            <p className="font-light">{product.shortDescription}</p>
           </div>
-          {/* <p className="text-[#1e1e4d] font-light text-lg">{product.shortDescription}</p> */}
+          <p className="text-[#1e1e4d] font-light text-lg">{product.shortDescription}</p>
           <div className="flex gap-3">
             <p>Share this: </p>
             <Instagram width={20} />
@@ -248,7 +248,7 @@ export default function ProductDetail({ product }: { product: ProductType }) {
               <strong>Category:</strong> {product.category}
             </p>
             <p>
-              <strong>Age Group:</strong> {product.ageGroup}
+              {/* <strong>Age Group:</strong> {product.ageGroup} */}
             </p>
           </div>
           </div>
@@ -258,9 +258,7 @@ export default function ProductDetail({ product }: { product: ProductType }) {
         <div className="border p-10  xl:p-15 xl:mt-30 border-gray-300 rounded-xl w-full">
          <h1 className="text-2xl mb-4 font-bold text-gray-600">Description</h1>
         <div className="text-sm">
-          <p>ipsum dolor sit amet consectetur adipisicing elit. Ullam ex cum dolorem molestiae aperiam. Quis deserunt facilis nam, ipsa quam beatae, ab vero maxime est aperiam nobis deleniti cumque animi!
-           Eligendi, velit perferendis! Fugit eos tempora deserunt quaerat dolore nesciunt, consectetur at placeat nobis atque quam maxime nulla explicabo suscipit porro magnam ipsa, error nemo quidem! Numquam nulla dolor similique.
-           Fuga sint quae quo facere ea magnam eum blanditiis esse accusamus a. Sapiente voluptas quibusdam asperiores est voluptatum officia neque quod, explicabo dolorum pariatur, ea officiis ipsa tempore dicta vitae.</p>
+          <p>{product.description}</p>
         </div>
         </div>
         {/* Related Product */}
