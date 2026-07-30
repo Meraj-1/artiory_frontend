@@ -52,7 +52,6 @@ export default function Page() {
                 </li>
               </ul>
             </section>
-
             <section>
               <h2 className="mb-4 text-2xl font-bold text-slate-900">
                 2. Shipping Coverage

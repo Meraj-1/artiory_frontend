@@ -197,7 +197,7 @@ export default function ProductDetail({ product }: { product: ProductType }) {
           <div>
             <p className="font-light">{product.shortDescription}</p>
           </div>
-          <p className="text-[#1e1e4d] font-light text-lg">{product.shortDescription}</p>
+          {/* <p className="text-[#1e1e4d] font-light text-lg">{product.shortDescription}</p> */}
           <div className="flex gap-3">
             <p>Share this: </p>
             <Instagram width={20} />

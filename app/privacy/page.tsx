@@ -199,14 +199,12 @@ export default function Page() {
               delivery and customer support purposes.
             </p>
 
-            <Sub>Payment &amp; Billing Information</Sub>
+            {/* <Sub>Payment &amp; Billing Information</Sub>
             <p>
               We may collect your billing name, billing address and payment method
-              when you place an order. We never collect your credit card number,
-              expiry date or sensitive payment information. Payments are securely
-              processed through authorized payment gateways such as Razorpay,
+              when you place an order. 
               PhonePe, Cashfree or other trusted providers.
-            </p>
+            </p> */}
 
             <Sub>Information You Post</Sub>
             <p>

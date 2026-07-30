@@ -27,13 +27,13 @@ const products = [
     rating: 3,
     sku: "JMC-001",
     category: "Puzzle Crayons",
-    image: "/product/2toys1.JPG",
+    image: "/product/2toys1.jpg",
     images: [
-      "/products/2toys1.JPG",
-      "/products/2toys2.JPG",
-      "/products/2toys3.JPG",
-      "/products/2toys4.JPG",
-      "/products/2toys5.JPG",
+      "/products/2toys1.jpg",
+      "/products/2toys2.jpg",
+      "/products/2toys3.jpg",
+      "/products/2toys4.jpg",
+      "/products/2toys5.jpg",
     ],
     shortDescription: "Make coloring even more exciting with the Artiory Crocodile Puzzle Crayon.",
     description:
@@ -47,12 +47,12 @@ const products = [
     sku: "BC-001",
     // ageGroup: "3+",
     category: "Puzzle Crayons",
-    image: "/product/3toys1.JPG",
+    image: "/product/3toys1.jpg",
     images: [
-      "/products/3toys1.JPG",
-      "/products/3toys2.JPG",
-      "/products/3toys3.JPG",
-      "/products/3toys4.JPG",
+      "/products/3toys1.jpg",
+      "/products/3toys2.jpg",
+      "/products/3toys3.jpg",
+      "/products/3toys4.jpg",
     ],
     shortDescription: "Unleash your child's creativity with the Artiory Dino Puzzle Crayon",
     description:
@@ -67,11 +67,11 @@ const products = [
     // ageGroup: "3+",
     // rating:4,
     category: "Puzzle Crayons",
-    image: "/product/4toys1.JPG",
+    image: "/product/4toys1.jpg",
     images: [
-      "/products/4toys1.JPG",
-      "/products/4toys2.JPG",
-      "/products/4toys3.JPG"
+      "/products/4toys1.jpg",
+      "/products/4toys2.jpg",
+      "/products/4toys3.jpg"
     ],
     shortDescription: "Spark your child's imagination with the Artiory Dino Puzzle Crayon, a fun and interactive coloring companion designed for young artists. ",
     description:
@@ -87,10 +87,10 @@ const products = [
     category: "Art Supplies",
     image: "/product/4toys1.jpg",
     images: [
-      "/products/4toys1.JPG",
-      "/products/4toys2.JPG",
-      "/products/4toys3.JPG",
-      "/products/4toys4.JPG",
+      "/products/4toys1.jpg",
+      "/products/4toys2.jpg",
+      "/products/4toys3.jpg",
+      "/products/4toys4.jpg",
     ],
     shortDescription: "Ergonomically designed crayons for better grip.",
     description:

@@ -132,7 +132,7 @@ export default function page() {
 
               <p>
                 Payments are processed securely through authorized payment
-                partners such as Razorpay, PhonePe, Cashfree, or other approved
+                partners such as jpgrpay, PhonePe, Cashfree, or other approved
                 payment gateways. Artiory does not store your debit card, credit
                 card, UPI PIN, CVV, or banking credentials. Orders will be
                 processed only after successful payment confirmation.
