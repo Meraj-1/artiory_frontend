@@ -163,11 +163,11 @@ const Reels = () => {
   return (
     <>
       {/* TOP DIVIDER */}
-      <WaveDivider bgColor="#00b8a2" className="-mb-22" flip />
+      {/* <WaveDivider bgColor="#00b8a2" className="-mb-22" flip /> */}
 
       {/* MAIN SECTION */}
-      <section className={`h-auto flex flex-col justify-center mt-20 items-center bg-[#00b8a2] ${londrina.className} `}>
-        <div className="pb-16 w-full flex flex-col items-center">
+      <section className={`h-auto flex flex-col justify-center -mt-20 items-center bg-[#00b8a2] ${londrina.className} `}>
+        <div className="pb-16 w-full flex flex-col mt-30 items-center">
 
           {/* Heading */}
           <div className="mb-6 text-center z-10">

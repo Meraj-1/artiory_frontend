@@ -58,8 +58,22 @@ const Footer = () => {
           </p>
           <p>Phone: <Link href="tel:+919820136133" className="hover:underline"> +91 81085 61836</Link></p>
         </div>
-
+   
       </div>
+             <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-gray-500">
+  <p>
+    © {new Date().getFullYear()} Artiory. All rights reserved.
+  </p>
+
+  <p>
+    Designed & Developed by{" "}
+    <p
+      className="font-semibold hover:text-[#00b8a2] transition-colors"
+    >
+      Athena Design Studios
+    </p>
+  </p>
+</div>
     </footer>
   );
 };

@@ -407,7 +407,7 @@ Any disputes, claims, or legal proceedings arising out of or relating to the use
             Artiory — Privacy Policy
           </span>
           <span className="text-[0.7rem] font-mono text-gray-600">
-            © {new Date().getFullYear()} Artiory. All rights reserved.
+            © {new Date().getFullYear()} artiory is privately owned by parent company athena design studios pvt ltd.
           </span>
         </div>
       </div>
