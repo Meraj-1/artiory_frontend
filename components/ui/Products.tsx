@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Londrina_Solid } from "next/font/google";
 import Image from "next/image";
 import { useCart } from "@/app/context/cart/Cartcontext";
@@ -45,39 +45,57 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => {
 };
 
 const Products: React.FC = () => {
-  const productData: Product[] = [
-    //  {
-    //     id: 1,
-    //     name: "Crocodile Puzzle Crayon",
-    //     price: 299,
-    //     // rating: 3,
-    //     ageGroup: "3+",
-    //     category: "Crayons",
-    //     image: "/products/2toys3.jpg",
-    //     images: ["/products/2toys1.jpg", "/products/2toys2.jpg"],
-    //     shortDescription: "Bring your child's imagination to life with the Artiory Jumbo Multicolored Crayon Set. ",
-    //     description: "Perfect for kid's 3+, with fun shapes & colors.",
-    //   },
-      {
-        id: 2,
-        name: "Dino Puzzle Crayon",
-        price: 299,
-        oldPrice: 399,
-        // rating: 4,
-        ageGroup: "3+",
-        category: "Puzzle Crayons",
-        image: "/products/2toys1.jpg",
-        images: ["/products/2toys1.jpg", "/products/2toys3.jpg"],
-        shortDescription: "Unleash your child's creativity with the Artiory Dino Puzzle Crayon.",
-        description: "Designed for little hands, vibrant & easy grip.",
-        isSale: true,
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("/api/products/store", { cache: "no-store" });
+        const data = await res.json();
+        
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.products)
+            ? data.products
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        
+        const finalProducts = list.map((item: any, index: number) => {
+          const price = Number(item.sellingPrice ?? item.price ?? 0);
+          const mrp = Number(item.mrp ?? item.price ?? 0);
+          const images = Array.isArray(item.images) && item.images.length > 0
+            ? item.images
+            : [item.image || item.thumbnail || "/product/placeholder.svg"];
+          return {
+            id: String(item._id || item.id || index + 1),
+            name: item.productName || item.name || "",
+            price,
+            oldPrice: mrp > price ? mrp : undefined,
+            image: item.image || item.thumbnail || images[0] || "/product/placeholder.svg",
+            images,
+            category: item.category || "",
+            shortDescription: item.shortDescription || item.shortDesc || "",
+            description: item.description || "",
+            isSale: mrp > price,
+            ageGroup: item.ageGroup || "3+",
+          };
+        });
+        setProducts(finalProducts);
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+      } finally {
+        setLoading(false);
       }
-  ];
+    };
+    fetchProducts();
+  }, []);
 
   const itemsPerPage = 8;
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(productData.length / itemsPerPage);
-  const paginatedProducts = productData.slice(
+  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const paginatedProducts = products.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );
@@ -131,6 +149,14 @@ const Products: React.FC = () => {
       });
     }
   };
+
+  if (loading) {
+    return <div className="text-center py-16 text-gray-400">Loading products...</div>;
+  }
+
+  if (products.length === 0) {
+    return null;
+  }
 
   return (
     <section className={`${londrina.className} py-16  bg-white`}>

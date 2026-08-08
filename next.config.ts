@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**.googleusercontent.com" },
       { protocol: "https", hostname: "**.ggpht.com" },
       { protocol: "https", hostname: "videos.pexels.com" },
+      { protocol: "https", hostname: "pub-bb695c125dd64e8f9aa98e1627add3b2.r2.dev" },
     ],
   },
 

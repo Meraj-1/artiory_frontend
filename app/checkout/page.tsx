@@ -1,9 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useCart } from "@/app/context/cart/Cartcontext";
 import Link from "next/link";
 import { Londrina_Solid } from "next/font/google";
+import { useSession } from "next-auth/react";
 
 const londrina = Londrina_Solid({
   weight: ["100", "300", "400", "900"],
@@ -21,6 +22,7 @@ type CartItem = {
 
 export default function CheckoutPage() {
   const { cartItems, getCartTotal } = useCart();
+  const { data: session } = useSession();
 
   const [form, setForm] = useState({
     firstName: "",
@@ -34,6 +36,53 @@ export default function CheckoutPage() {
     notes: "",
     paymentMethod: "card",
   });
+
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
+
+  useEffect(() => {
+    if (session?.user) {
+      // 1. Autofill profile name and email
+      const nameParts = (session.user.name || "").trim().split(/\s+/);
+      const firstName = nameParts[0] || "";
+      const lastName = nameParts.slice(1).join(" ") || "";
+      setForm((prev) => ({
+        ...prev,
+        firstName: prev.firstName || firstName,
+        lastName: prev.lastName || lastName,
+        email: prev.email || session.user.email || "",
+        phone: prev.phone || (session.user as any).number || "",
+      }));
+
+      // 2. Fetch addresses
+      fetch("/api/address")
+        .then((res) => {
+          if (res.ok) return res.json();
+          throw new Error("Failed to load addresses");
+        })
+        .then((json) => {
+          setSavedAddresses(Array.isArray(json.data) ? json.data : []);
+        })
+        .catch((err) => console.error(err));
+    }
+  }, [session]);
+
+  const handleSelectAddress = (addressId: string) => {
+    setSelectedAddressId(addressId);
+    if (!addressId) return;
+
+    const selected = savedAddresses.find((addr) => addr._id === addressId);
+    if (selected) {
+      setForm((prev) => ({
+        ...prev,
+        address: selected.street || "",
+        city: selected.city || "",
+        state: selected.state || "",
+        zip: selected.postalCode || "",
+        phone: selected.phone || prev.phone || "",
+      }));
+    }
+  };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -59,8 +108,29 @@ export default function CheckoutPage() {
         {/* LEFT SIDE - Form */}
         <div className="lg:col-span-2 flex flex-col gap-8">
           {/* Delivery Info */}
-          <div className="border border-gray-300 border-gray-300-gray-300 rounded-xl p-8 shadow-md">
+          <div className="border border-gray-300 rounded-xl p-8 shadow-md">
             <h2 className={`${londrina.className} text-2xl font-semibold mb-6`}>Delivery Information</h2>
+            
+            {savedAddresses.length > 0 && (
+              <div className="mb-6 bg-gray-50 border border-dashed border-gray-300 rounded-xl p-4">
+                <label className="block text-sm font-semibold text-[#2e306a] mb-2">
+                  Select a Saved Address
+                </label>
+                <select
+                  value={selectedAddressId}
+                  onChange={(e) => handleSelectAddress(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg p-3 bg-white text-[#2e306a] focus:outline-none focus:ring focus:ring-gray-300 font-medium"
+                >
+                  <option value="">-- Choose from your saved addresses --</option>
+                  {savedAddresses.map((addr) => (
+                    <option key={addr._id} value={addr._id}>
+                      {addr.type || addr.home || "Address"} - {addr.street}, {addr.city}, {addr.state} ({addr.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <input
                 name="firstName"
@@ -85,26 +155,20 @@ export default function CheckoutPage() {
               className="border border-gray-300 rounded-lg p-3 w-full mt-4"
             />
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <select
+              <input
                 name="city"
                 value={form.city}
                 onChange={handleChange}
+                placeholder="Town / City *"
                 className="border border-gray-300 rounded-lg p-3 w-full"
-              >
-                <option value="">Town / City</option>
-                <option value="Mumbai">Mumbai</option>
-                <option value="pune">Pune</option>
-              </select>
-              <select
+              />
+              <input
                 name="state"
                 value={form.state}
                 onChange={handleChange}
+                placeholder="State *"
                 className="border border-gray-300 rounded-lg p-3 w-full"
-              >
-                <option value="">State</option>
-                <option value="maharashtra">Maharashtra</option>
-                <option value="gujarat">Gujarat</option>
-              </select>
+              />
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
               <input

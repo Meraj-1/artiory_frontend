@@ -1,12 +1,63 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Star, Heart, ShoppingCart, SlidersHorizontal, ChevronDown, X, PackageSearch } from "lucide-react";
 import { Londrina_Solid } from "next/font/google";
 import { useWishlist } from "../context/whishlist/WishlistContext";
 import { useCart } from "../context/cart/Cartcontext";
 import { ToastContainer, toast } from "react-toastify";
+
+const fallbackProducts: Product[] = [
+  {
+    id: "1",
+    name: "Jumbo Multicolored Crayon",
+    price: 299,
+    oldPrice: 399,
+    image: "/product/1toys1.jpg",
+    images: ["/product/1toys1.jpg", "/product/1toys2.jpg", "/product/1toys3.jpg"],
+    category: "Crayons",
+    shortDescription: "Made from child-friendly, non-toxic materials for vibrant, easy coloring.",
+    description: "Bring your child's imagination to life with the Artiory Jumbo Multicolored Crayon Set.",
+    isSale: true,
+  },
+  {
+    id: "2",
+    name: "Crocodile Puzzle Crayon",
+    price: 299,
+    oldPrice: 399,
+    image: "/product/2toys1.jpg",
+    images: ["/product/2toys1.jpg", "/product/2toys2.jpg", "/product/2toys3.jpg", "/product/2toys4.jpg"],
+    category: "Puzzle Crayons",
+    shortDescription: "Interactive puzzle crayon that turns coloring into a fun learning activity.",
+    description: "A playful crayon set that can be stacked into a crocodile puzzle.",
+    isSale: true,
+  },
+  {
+    id: "3",
+    name: "Dino Puzzle Crayon",
+    price: 299,
+    oldPrice: 399,
+    image: "/product/3toys1.jpg",
+    images: ["/product/3toys1.jpg", "/product/3toys2.jpg", "/product/3toys3.jpg", "/product/3toys4.jpg"],
+    category: "Puzzle Crayons",
+    shortDescription: "A fun dinosaur-shaped crayon set for creative play and learning.",
+    description: "Designed in a fun dinosaur shape, this stackable puzzle crayon combines vibrant colors with interactive play.",
+    isSale: true,
+  },
+  {
+    id: "4",
+    name: "Dino Puzzle Crayon",
+    price: 299,
+    oldPrice: 399,
+    image: "/product/4toys1.jpg",
+    images: ["/product/4toys1.jpg", "/product/4toys2.jpg", "/product/4toys3.jpg"],
+    category: "Puzzle Crayons",
+    shortDescription: "Spark your child's imagination with this interactive coloring companion.",
+    description: "Crafted from child-safe materials, ideal for school projects and birthday hampers.",
+    isSale: true,
+  },
+];
 
 const londrina = Londrina_Solid({
   weight: ["100", "300", "400", "900"],
@@ -29,72 +80,20 @@ function Rating({ value }: { value: number }) {
 }
 
 type Product = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   oldPrice?: number;
   image: string;
   images: string[];
-  // rating: number;
   category: string;
+  subCategory?: string;
   shortDescription: string;
   description: string;
   isSale?: boolean;
-  ageGroup: string;
 };
 
-const product: Product[] = [
-  {
-    id: 1,
-    name: "Jumbo Multicolored Crayon",
-    price: 299,
-    // rating: 3,
-    ageGroup: "3+",
-    category: "Crayons",
-    image: "/products/1toys1.jpg",
-    images: ["/products/1toys1.jpg", "/products/1toys2.jpg"],
-    shortDescription: "Bring your child's imagination to life with the Artiory Jumbo Multicolored Crayon Set. ",
-    description: "Perfect for kid's 3+, with fun shapes & colors.",
-  },
-  {
-    id: 2,
-    name: "Crocodile Puzzle Crayon",
-    price: 299,
-    oldPrice: 399,
-    // rating: 4,
-    ageGroup: "3+",
-    category: "Puzzle Crayons",
-    image: "/products/2toys1.jpg",
-    images: ["/products/2toys1.jpg", "/products/2toys3.jpg"],
-    shortDescription: "Unleash your child's creativity with the Artiory Dino Puzzle Crayon.",
-    description: "Designed for little hands, vibrant & easy grip.",
-    isSale: true,
-  },
-  {
-    id: 3,
-    name: "Dino Puzzle Crayon",
-    price: 299,
-    // rating: 3,
-    ageGroup: "4+",
-    category: "Puzzle Crayons",
-    image: "/products/3toys1.jpg",
-    images: ["/products/3toys1.jpg", "/products/3toys2.jpg"],
-    shortDescription: "Ergonomically designed crayons for better grip.",
-    description: "Helps improve hand coordination for kid's.",
-  },
-  {
-    id: 4,
-    name: "Dino Puzzle Crayon",
-    price: 349,
-    // rating: 4,
-    ageGroup: "3+",
-    category: "Puzzle Crayons",
-    image: "/products/4toys1.jpg",
-    images: ["/products/4toys1.jpg", "/products/4toys2.jpg"],
-    shortDescription: "Spark your child's imagination with the Artiory Dino Puzzle",
-    description: "Extra durability & smooth coloring for kid's.",
-  },
-];
+
 
 const categoryGroups: { label: string; icon: string; items: string[] }[] = [
   { label: "Art & Craft", icon: "🎨", items: ["Crayons", "Water Colours", "Puzzle Crayons"] },
@@ -105,14 +104,157 @@ const categoryGroups: { label: string; icon: string; items: string[] }[] = [
   { label: "Gifts & Fun", icon: "🎁", items: ["Metal Money Box", "Gift Hamper", "Mini Fan"] },
 ];
 
-const ages = ["All", "Upto 1 year", "1 year", "2 years", "3-4 years", "Over 4 years"];
+
 
 export default function ProductListPage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [selectedAge, setSelectedAge] = useState("All");
+
   const [sortOption, setSortOption] = useState("Default");
   const [openGroups, setOpenGroups] = useState<string[]>([]);
   const [showMobileFilter, setShowMobileFilter] = useState(false);
+
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const res = await fetch("/api/products/store", { cache: "no-store" });
+        const data = await res.json();
+
+        const normalizedProducts = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.products)
+            ? data.products
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+
+        const finalProducts = normalizedProducts.length > 0
+          ? normalizedProducts.map((item: any, index: number) => {
+              const normalized = item ?? {};
+
+              const extractImageCandidates = (value: unknown): string[] => {
+                if (Array.isArray(value)) {
+                  return value.flatMap((entry) => extractImageCandidates(entry));
+                }
+
+                if (value && typeof value === "object") {
+                  const objectValue = value as Record<string, unknown>;
+                  const nestedCandidates = [
+                    objectValue.url,
+                    objectValue.secureUrl,
+                    objectValue.src,
+                    objectValue.path,
+                    objectValue.href,
+                    objectValue.imageUrl,
+                    objectValue.thumbnail,
+                    objectValue.image,
+                    objectValue.link,
+                    objectValue.downloadUrl,
+                  ];
+                  return nestedCandidates.flatMap((entry) => extractImageCandidates(entry));
+                }
+
+                if (typeof value === "string") {
+                  const trimmed = value.trim();
+                  return trimmed ? [trimmed] : [];
+                }
+
+                return [];
+              };
+
+              const resolveImageSrc = (src?: unknown) => {
+                if (typeof src !== "string") {
+                  return "/product/placeholder.svg";
+                }
+
+                const trimmed = src.trim();
+                if (!trimmed) return "/product/placeholder.svg";
+                if (trimmed.startsWith("http://") || trimmed.startsWith("https://") || trimmed.startsWith("data:") || trimmed.startsWith("blob:")) {
+                  return trimmed;
+                }
+                if (trimmed.startsWith("//")) {
+                  return `https:${trimmed}`;
+                }
+                if (/^(?:[a-z][a-z\d+.-]*:)?\/\//i.test(trimmed)) {
+                  return trimmed;
+                }
+                if (/^(?:[a-z0-9.-]+\.)+[a-z]{2,}(?:\/|$)/i.test(trimmed)) {
+                  return `https://${trimmed}`;
+                }
+                if (trimmed.startsWith("/")) {
+                  return trimmed;
+                }
+                return `/product/${trimmed}`;
+              };
+
+              const imageCandidates = extractImageCandidates(
+                normalized.images ??
+                normalized.imageUrls ??
+                normalized.imageList ??
+                normalized.gallery ??
+                normalized.productImages ??
+                normalized.media ??
+                normalized.image
+              );
+
+              const imageList = imageCandidates.filter(Boolean);
+              const image = resolveImageSrc(
+                normalized.image ??
+                normalized.productImage ??
+                normalized.thumbnail ??
+                normalized.mainImage ??
+                normalized.imageUrl ??
+                normalized.imagePath ??
+                normalized.url ??
+                normalized.img ??
+                normalized.photo ??
+                imageList[0]
+              );
+              const price = Number(normalized.sellingPrice ?? normalized.price ?? normalized.selling_price ?? normalized.finalPrice ?? normalized.amount ?? 0);
+              const mrp = Number(normalized.mrp ?? normalized.oldPrice ?? normalized.originalPrice ?? normalized.basePrice ?? normalized.price ?? 0);
+
+              return {
+                ...normalized,
+                id: String(normalized._id ?? normalized.id ?? normalized.productId ?? normalized.product_id ?? index + 1),
+                _id: normalized._id ?? normalized.id ?? normalized.productId ?? normalized.product_id ?? index + 1,
+                name: normalized.productName || normalized.name || normalized.title || normalized.product_title || `Product ${index + 1}`,
+                productName: normalized.productName || normalized.name || normalized.title || normalized.product_title || `Product ${index + 1}`,
+                category: normalized.category || normalized.categoryName || normalized.productCategory || normalized.type || "",
+                subCategory: normalized.subCategory || "",
+                shortDescription: normalized.shortDescription || normalized.shortDesc || normalized.description || normalized.summary || normalized.details || "",
+                description: normalized.description || normalized.longDescription || normalized.details || normalized.shortDescription || normalized.shortDesc || "",
+                price,
+                sellingPrice: price,
+                mrp,
+                oldPrice: mrp || undefined,
+                image,
+                images: imageList.length > 0 ? imageList.map((img: string) => resolveImageSrc(img)) : [image],
+                isSale: Boolean(normalized.isSale ?? normalized.onSale ?? (mrp > 0 && price > 0 && price < mrp)),
+              };
+            })
+          : [];
+
+        setProducts(finalProducts);
+        console.log("API categories:", [...new Set(finalProducts.map((p: any) => p.category))]);
+      } catch (error) {
+        console.error("Failed to load products", error);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const catParam = params.get("category");
+      if (catParam) setSelectedCategory(catParam);
+    }
+  }, []);
 
   const { dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
@@ -136,20 +278,44 @@ export default function ProductListPage() {
   const toggleGroup = (label: string) =>
     setOpenGroups((prev) => prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]);
 
-  const clearFilters = () => { setSelectedCategory("All"); setSelectedAge("All"); };
+  const clearFilters = () => { setSelectedCategory("All"); };
 
-  let filteredProducts = product.filter(
-    (p) =>
-      (selectedCategory === "All" || p.category === selectedCategory ||
-        categoryGroups.find((g) => g.label === selectedCategory)?.items.includes(p.category)) &&
-      (selectedAge === "All" || p.ageGroup === selectedAge)
-  );
+  const normalizeForMatch = (str: string) => {
+    if (!str) return "";
+    let res = str.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (res === "artscraft" || res === "artsandcraft" || res === "artandcraft") {
+      res = "artcraft";
+    }
+    return res;
+  };
+
+  let filteredProducts = products.filter((p) => {
+    // 1. Category Filter
+    let catMatch = true;
+    if (selectedCategory !== "All") {
+      const pCat = normalizeForMatch(p.category);
+      const pSub = normalizeForMatch(p.subCategory || "");
+      const selCat = normalizeForMatch(selectedCategory);
+      
+      const directCategoryMatch = pCat === selCat;
+      const directSubCategoryMatch = pSub === selCat;
+      
+      // Find if selCat is a parent category group (like "Art & Craft")
+      const group = categoryGroups.find((g) => normalizeForMatch(g.label) === selCat);
+      const groupMatch = group 
+        ? (pCat === selCat || group.items.some((item) => normalizeForMatch(item) === pSub)) 
+        : false;
+      
+      catMatch = directCategoryMatch || directSubCategoryMatch || groupMatch;
+    }
+
+    return catMatch;
+  });
 
   if (sortOption === "Price: Low to High") filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
   else if (sortOption === "Price: High to Low") filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
-  // else if (sortOption === "Rating") filteredProducts = [...filteredProducts].sort((a, b) => b.rating - a.rating);
 
-  const activeFilterCount = (selectedCategory !== "All" ? 1 : 0) + (selectedAge !== "All" ? 1 : 0);
+  const activeFilterCount = selectedCategory !== "All" ? 1 : 0;
 
   const SidebarFilters = () => (
     <>
@@ -160,7 +326,7 @@ export default function ProductListPage() {
         </div>
         <div className="p-3">
           <button
-            className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-sm transition-all mb-1 ${
+            className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-sm transition-all mb-1 cursor-pointer ${
               selectedCategory === "All" ? "bg-[#00b8a2] text-white font-medium shadow-sm" : "hover:bg-gray-50 text-gray-600"
             }`}
             onClick={() => setSelectedCategory("All")}
@@ -170,7 +336,7 @@ export default function ProductListPage() {
           {categoryGroups.map((group) => (
             <div key={group.label}>
               <button
-                className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all"
+                className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
                 onClick={() => toggleGroup(group.label)}
               >
                 <span className="flex items-center gap-2"><span>{group.icon}</span>{group.label}</span>
@@ -181,7 +347,7 @@ export default function ProductListPage() {
                   {group.items.map((cat) => (
                     <button
                       key={cat}
-                      className={`block w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all ${
+                      className={`block w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
                         selectedCategory === cat ? "bg-[#00b8a2]/10 text-[#00b8a2] font-medium" : "text-gray-500 hover:text-[#2e306a] hover:bg-gray-50"
                       }`}
                       onClick={() => setSelectedCategory(cat)}
@@ -196,31 +362,10 @@ export default function ProductListPage() {
         </div>
       </div>
 
-      {/* Age Filter */}
-      {/* <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h3 className={`${londrina.className} font-semibold text-[#2e306a] tracking-wide text-sm uppercase`}>Age Group</h3>
-        </div>
-        <div className="p-3 space-y-0.5">
-          {ages.map((age) => (
-            <button
-              key={age}
-              className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-sm transition-all ${
-                selectedAge === age ? "bg-[#00b8a2] text-white font-medium shadow-sm" : "hover:bg-gray-50 text-gray-600"
-              }`}
-              onClick={() => setSelectedAge(age)}
-            >
-              <span className={`w-2 h-2 rounded-full ${selectedAge === age ? "bg-white" : "bg-gray-300"}`} />
-              {age}
-            </button>
-          ))}
-        </div>
-      </div> */}
-
       {activeFilterCount > 0 && (
         <button
           onClick={clearFilters}
-          className="w-full py-2.5 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all"
+          className="w-full py-2.5 text-sm text-red-500 border border-red-200 rounded-xl hover:bg-red-50 transition-all cursor-pointer"
         >
           Clear All Filters
         </button>
@@ -239,7 +384,7 @@ export default function ProductListPage() {
             <Link href="/" className="hover:text-[#00b8a2]">Home</Link> / All Products
           </p>
           <h1 className={`${londrina.className} text-3xl font-semibold text-[#2e306a]`}>Our Products</h1>
-          <p className="text-sm text-gray-400 mt-1">{product.length} items available</p>
+          <p className="text-sm text-gray-400 mt-1">{products.length} items available</p>
         </div>
       </div>
 
@@ -278,12 +423,6 @@ export default function ProductListPage() {
                     <button onClick={() => setSelectedCategory("All")}><X className="w-3 h-3" /></button>
                   </span>
                 )}
-                {selectedAge !== "All" && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-[#00b8a2]/10 text-[#00b8a2] rounded-full text-xs font-medium">
-                    Age: {selectedAge}
-                    <button onClick={() => setSelectedAge("All")}><X className="w-3 h-3" /></button>
-                  </span>
-                )}
 
                 <span className="text-xs text-gray-400 hidden sm:block">
                   {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
@@ -303,7 +442,9 @@ export default function ProductListPage() {
             </div>
 
             {/* Product Grid */}
-            {filteredProducts.length === 0 ? (
+            {loading ? (
+              <div className="flex justify-center items-center py-24 text-gray-400">Loading...</div>
+            ) : filteredProducts.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-24 text-gray-400">
                 <PackageSearch className="w-14 h-14 mb-4 text-gray-300" />
                 <p className="text-lg font-medium text-gray-500">No products found</p>
@@ -312,11 +453,14 @@ export default function ProductListPage() {
                   Clear Filters
                 </button>
               </div>
-            ) : (
+            ) : loading ? null : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredProducts.map((p) => {
                   const isWishlisted = wishlistState.items.some((item) => item.id === String(p.id));
                   const discount = p.oldPrice ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : null;
+                  const displayCategory = p.category === "ArtsCraft" || normalizeForMatch(p.category) === "artcraft" 
+                    ? "Art & Craft" 
+                    : p.category;
                   return (
                     <div key={p.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
                       {/* Image */}
@@ -326,7 +470,7 @@ export default function ProductListPage() {
                           {p.isSale && (
                             <span className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">SALE</span>
                           )}
-                          {discount && (
+                          {discount !== null && discount > 0 && (
                             <span className="bg-[#00b8a2] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">-{discount}%</span>
                           )}
                         </div>
@@ -347,27 +491,23 @@ export default function ProductListPage() {
                           </button>
                         </div>
 
-                        <Image
+                        <img
                           src={p.image}
                           alt={p.name}
-                          fill
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          className="object-contain p-6 transition-opacity duration-400 group-hover:opacity-0"
+                          className="h-full w-full object-contain p-6 transition-opacity duration-400 group-hover:opacity-0"
                         />
                         {p.images[1] && (
-                          <Image
+                          <img
                             src={p.images[1]}
                             alt={p.name}
-                            fill
-                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                            className="object-contain p-6 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400"
+                            className="h-full w-full object-contain p-6 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400"
                           />
                         )}
                       </Link>
 
                       {/* Info */}
                       <div className="p-3 flex flex-col gap-1.5 flex-1">
-                        <span className="text-[10px] text-[#00b8a2] font-medium uppercase tracking-wide">{p.category}</span>
+                        <span className="text-[10px] text-[#00b8a2] font-medium uppercase tracking-wide">{displayCategory}{p.subCategory ? ` / ${p.subCategory}` : ""}</span>
                         <Link href={`/product/${p.id}`}>
                           <h3 className="text-sm font-semibold text-[#2e306a] leading-snug line-clamp-2 hover:text-[#00b8a2] transition-colors">
                             {p.name}
@@ -379,9 +519,9 @@ export default function ProductListPage() {
                         <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
                           <div className="flex items-baseline gap-1.5">
                             <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{p.price}</span>
-                            {p.oldPrice && (
+                            {p.oldPrice && p.oldPrice > p.price ? (
                               <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{p.oldPrice}</span>
-                            )}
+                            ) : null}
                           </div>
                           <button
                             onClick={() => handleAddToCart(p)}

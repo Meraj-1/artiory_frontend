@@ -30,6 +30,7 @@ import { useCart } from "@/app/context/cart/Cartcontext";
 type Props = { onClose: () => void };
 
 interface Address {
+  _id?: string;
   type: string;
   street: string;
   city: string;
@@ -63,6 +64,39 @@ export default function ProfileModal({ onClose }: Props) {
     phone: "",
   });
   const [addresses, setAddresses] = useState<Address[]>([]);
+  const [addressesLoading, setAddressesLoading] = useState(false);
+
+  const fetchAddresses = async () => {
+    setAddressesLoading(true);
+    try {
+      const res = await fetch("/api/address");
+      if (res.ok) {
+        const json = await res.json();
+        const list = Array.isArray(json.data) ? json.data : [];
+        const mapped = list.map((addr: any) => ({
+          _id: addr._id,
+          type: addr.home || "Home",
+          street: addr.street || "",
+          city: addr.city || "",
+          state: addr.state || "",
+          postalCode: addr.postalCode || "",
+          country: addr.country || "",
+          phone: addr.phone || "",
+        }));
+        setAddresses(mapped);
+      }
+    } catch (err) {
+      console.error("Failed to fetch addresses:", err);
+    } finally {
+      setAddressesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (session?.user && activeSection === "address") {
+      fetchAddresses();
+    }
+  }, [session, activeSection]);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -145,7 +179,7 @@ export default function ProfileModal({ onClose }: Props) {
     }
   };
 
-  const handleAddAddress = () => {
+  const handleAddAddress = async () => {
     if (
       !address.street ||
       !address.city ||
@@ -156,17 +190,71 @@ export default function ProfileModal({ onClose }: Props) {
       toast.error("Please fill all fields.", { autoClose: 700 });
       return;
     }
-    setAddresses([...addresses, address]);
-    setAddress({
-      type: "Home",
-      street: "",
-      city: "",
-      state: "",
-      postalCode: "",
-      country: "",
-      phone: "",
-    });
-    toast.success("Address added!", { autoClose: 700 });
+
+    try {
+      setLoading(true);
+      const res = await fetch("/api/address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          home: address.type,
+          street: address.street,
+          city: address.city,
+          state: address.state,
+          postalCode: address.postalCode,
+          country: address.country,
+          phone: address.phone,
+        }),
+      });
+
+      if (res.ok) {
+        toast.success("Address added successfully!", { autoClose: 700 });
+        setAddress({
+          type: "Home",
+          street: "",
+          city: "",
+          state: "",
+          postalCode: "",
+          country: "",
+          phone: "",
+        });
+        fetchAddresses();
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || "Failed to add address", { autoClose: 700 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to add address", { autoClose: 700 });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this address?")) return;
+
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/address/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast.success("Address deleted successfully!", { autoClose: 700 });
+        fetchAddresses();
+      } else {
+        const errorData = await res.json();
+        toast.error(errorData.message || "Failed to delete address", { autoClose: 700 });
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to delete address", { autoClose: 700 });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRemoveFromWishlist = (id: string) => {
@@ -378,21 +466,40 @@ export default function ProfileModal({ onClose }: Props) {
 
       case "address":
         return (
-          <div className="p-2 bg-white rounded-lg shadow">
-            <h2 className="text-lg font-semibold text-gray-700 mb-2">My Addresses</h2>
-            {addresses.length === 0 ? (
+          <div className="p-4 bg-white rounded-lg shadow text-gray-700 overflow-y-auto max-h-[80vh]">
+            <h2 className="text-xl font-bold text-[#1e1e4d] mb-4">My Addresses</h2>
+            
+            {addressesLoading ? (
+              <div className="flex justify-center items-center py-8 text-gray-500">
+                <Loader2 className="animate-spin mr-2" size={18} />
+                Loading addresses...
+              </div>
+            ) : addresses.length === 0 ? (
               <p className="text-sm text-gray-500 mb-4">You have not added any addresses yet.</p>
             ) : (
-              <ul className="mb-4 md:space-y-2">
+              <ul className="mb-6 space-y-2 max-h-[300px] overflow-y-auto pr-1">
                 {addresses.map((addr, index) => (
-                  <li key={index} className="p-3 border rounded-md text-sm text-gray-700 bg-gray-50">
-                    <strong>{addr.type}:</strong> {addr.street}, {addr.city}, {addr.state} - {addr.postalCode}, {addr.country} ({addr.phone})
+                  <li key={addr._id || index} className="p-3 border rounded-md text-sm text-gray-700 bg-gray-50 flex justify-between items-center">
+                    <div>
+                      <strong className="text-[#1e1e4d]">{addr.type}:</strong> {addr.street}, {addr.city}, {addr.state} - {addr.postalCode}, {addr.country} ({addr.phone})
+                    </div>
+                    {addr._id && (
+                      <button
+                        onClick={() => handleDeleteAddress(addr._id!)}
+                        className="text-red-500 hover:text-red-700 transition cursor-pointer p-1 ml-2 flex-shrink-0"
+                        title="Delete Address"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
             )}
 
-            <div className="space-y-3">
+            <div className="border-t pt-4 space-y-3">
+              <h3 className="text-sm font-semibold text-gray-600 mb-1">Add New Address</h3>
+              
               <select name="type" value={address.type} onChange={(e) => setAddress({ ...address, type: e.target.value })} className="w-full border border-gray-300 rounded-md px-3 py-2 text-[#1e1e4d] focus:outline-none focus:ring focus:ring-gray-300">
                 <option className="bg-[#1e1e4d] text-white">Home</option>
                 <option className="bg-[#1e1e4d] text-white">Work</option>
@@ -403,15 +510,15 @@ export default function ProfileModal({ onClose }: Props) {
                   key={field}
                   type="text"
                   name={field}
-                  placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-                  value={address[field as keyof Address]}
+                  placeholder={field === "postalCode" ? "Postal Code / Zip" : field.charAt(0).toUpperCase() + field.slice(1)}
+                  value={address[field as keyof Address] || ""}
                   onChange={(e) => setAddress({ ...address, [field]: e.target.value })}
                   className="w-full border text-black border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-gray-300"
                 />
               ))}
               <div className="flex gap-3 pt-2">
-                <button onClick={handleAddAddress} className="w-1/2 bg-[#1e1e4d] cursor-pointer text-white py-2 rounded-md">Add Address</button>
-                <button onClick={() => setAddress({ type: "Home", street: "", city: "", state: "", postalCode: "", country: "", phone: "" })} className="w-1/2 bg-[#1e1e4d] text-white py-2 rounded-md">Cancel</button>
+                <button onClick={handleAddAddress} className="w-1/2 bg-[#1e1e4d] hover:bg-[#3b3b7a] transition cursor-pointer text-white py-2 rounded-md font-medium">Add Address</button>
+                <button onClick={() => setAddress({ type: "Home", street: "", city: "", state: "", postalCode: "", country: "", phone: "" })} className="w-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 transition cursor-pointer py-2 rounded-md font-medium">Cancel</button>
               </div>
             </div>
             <ToastContainer />

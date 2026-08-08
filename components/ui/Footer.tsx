@@ -60,20 +60,16 @@ const Footer = () => {
         </div>
    
       </div>
-             <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-gray-500">
-  <p>
-    © {new Date().getFullYear()} Artiory. All rights reserved.
-  </p>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-2 text-sm text-gray-500">
+        <p>© {new Date().getFullYear()} Artiory. All rights reserved.</p>
 
-  <p>
-    Designed & Developed by{" "}
-    <p
-      className="font-semibold hover:text-[#00b8a2] transition-colors"
-    >
-      Athena Design Studios
-    </p>
-  </p>
-</div>
+        <div className="flex items-center gap-1">
+          <span>Designed & Developed by</span>
+          <span className="font-semibold hover:text-[#00b8a2] transition-colors">
+            Athena Design Studios
+          </span>
+        </div>
+      </div>
     </footer>
   );
 };

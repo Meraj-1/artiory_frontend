@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Londrina_Solid } from "next/font/google";
 import Image from "next/image";
 import Link from "next/link";
@@ -15,7 +15,7 @@ const londrina = Londrina_Solid({
 });
 
 type Product = {
-  id: number;
+  id: string | number;
   image: string;
   name: string;
   price: number;
@@ -42,61 +42,59 @@ const RatingStars: React.FC<{ rating: number }> = ({ rating }) => {
   );
 };
 
-const RelatedProducts: React.FC = () => {
-  const sampleProducts: Product[] = [
-    {
-      id: 1,
-      name: "PUZZLE-CRAYONS",
-      price: 299,
-      image: "/products/1toys1.jpg",
-      sku: "PC-001",
-      ageGroup: "3+",
-      rating: 4,
-      category: "Art Supplies",
-      shortDescription: "Bright and colorful puzzle crayons for kid's.",
-      description:
-        "These puzzle crayons are perfect for children aged 3 and above. They come in a variety of bright colors and can be easily assembled into fun shapes, making coloring time even more enjoyable.",
-    },
-    {
-      id: 2,
-      name: "JUMBO-MULTI-COLOUR-CRAYON",
-      price: 299,
-      sku: "JMC-001",
-      ageGroup: "3+",
-      rating: 3,
-      category: "Art Supplies",
-      image: "/products/2toys1.jpg",
-      shortDescription: "Large, easy-to-hold crayons in multiple colors.",
-      description:
-        "These jumbo multi-color crayons are designed for little hands. They are easy to grip and come in a variety of vibrant colors, making them ideal for young artists to explore their creativity.",
-    },
-    {
-      id: 3,
-      name: "BALANCE-CRAYONS",
-      price: 299,
-      image: "/products/3toys1.jpg",
-      sku: "BC-001",
-      ageGroup: "3+",
-      rating: 4,
-      category: "Art Supplies",
-      shortDescription: "Ergonomically designed crayons for better grip.",
-      description:
-        "Balance crayons are ergonomically designed to provide a comfortable grip for children. They help improve hand coordination and make coloring easier and more enjoyable for young artists.",
-    },
-    {
-      id: 4,
-      name: "COLORING-BOOK",
-      price: 199,
-      image: "/products/4toys1.jpg",
-      sku: "CB-001",
-      ageGroup: "3+",
-      rating: 5,
-      category: "Books",
-      shortDescription: "Fun coloring book for kid's.",
-      description:
-        "Creative activity book with drawings to color, designed to inspire kid's’ imagination.",
-    },
-  ];
+interface RelatedProductsProps {
+  category?: string;
+  currentProductId?: string;
+}
+
+const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProductId }) => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRelated = async () => {
+      try {
+        const res = await fetch("/api/products/store", { cache: "no-store" });
+        const data = await res.json();
+        
+        const list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.products)
+            ? data.products
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+        
+        let filtered = list
+          .map((item: any, index: number) => ({
+            id: String(item._id || item.id || index + 1),
+            name: item.productName || item.name || "",
+            price: Number(item.sellingPrice ?? item.price ?? 0),
+            image: item.image || item.thumbnail || (item.images && item.images[0]) || "/product/placeholder.svg",
+            images: item.images || [],
+            sku: item.skuCode || item.sku || "",
+            ageGroup: item.ageGroup || "3+",
+            category: item.category || "",
+            shortDescription: item.shortDescription || item.shortDesc || "",
+            description: item.description || "",
+            rating: item.rating || 4,
+          }))
+          .filter((p: any) => String(p.id) !== String(currentProductId));
+
+        if (category) {
+          const sameCategory = filtered.filter((p: any) => p.category === category);
+          filtered = sameCategory.length > 0 ? sameCategory : filtered;
+        }
+
+        setProducts(filtered.slice(0, 4));
+      } catch (err) {
+        console.error("Failed to fetch related products", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRelated();
+  }, [category, currentProductId]);
 
   const { dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
@@ -149,6 +147,14 @@ const RelatedProducts: React.FC = () => {
     }
   };
 
+  if (loading) {
+    return <div className="text-center py-10 text-gray-400">Loading related products...</div>;
+  }
+
+  if (products.length === 0) {
+    return null;
+  }
+
   return (
     <section className={`${londrina.className} py-16 bg-white`}>
       {/* Heading */}
@@ -160,7 +166,7 @@ const RelatedProducts: React.FC = () => {
 
       {/* Grid */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-[90%] mx-auto">
-        {sampleProducts.map((product) => (
+        {products.map((product) => (
           <div key={product.id} className="w-full flex justify-center">
             <Link
               href={`/product/${product.id}`}
