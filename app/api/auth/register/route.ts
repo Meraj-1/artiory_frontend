@@ -7,7 +7,7 @@ const RegisterBody = z.object({
   password: z.string().min(6),
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || `${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}`;
 
 export async function POST(req: Request) {
   try {

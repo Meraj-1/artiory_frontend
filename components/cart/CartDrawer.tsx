@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import { CartItem, useCart } from "@/app/context/cart/Cartcontext";
 import { Trash, Plus, Minus } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,71 @@ const londrina = Londrina_Solid({
 export default function CartPage() {
   const { cart, dispatch } = useCart(); 
 
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [couponError, setCouponError] = useState("");
+  const [couponSuccess, setCouponSuccess] = useState("");
+
+  const totalAmount = cart.items.reduce(
+    (sum: number, item: CartItem) => sum + item.price * item.quantity,
+    0
+  );
+
+  // Fetch available coupons
+  useEffect(() => {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.data)) {
+          // Only show active coupons
+          const active = json.data.filter((c: any) => c.active && new Date(c.expiry) > new Date());
+          setCoupons(active);
+        }
+      })
+      .catch((err) => console.error("Error loading coupons:", err));
+  }, []);
+
+  const handleApplyCoupon = (codeToApply?: string) => {
+    const targetCode = (codeToApply || couponCode).trim().toUpperCase();
+    if (!targetCode) return;
+
+    setCouponError("");
+    setCouponSuccess("");
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons/validate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        code: targetCode,
+        orderTotal: totalAmount,
+      }),
+    })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json.message || "Invalid coupon code");
+        }
+        setAppliedCoupon(json.data);
+        setCouponSuccess(`Coupon "${json.data.code}" applied! Saved ₹${json.data.discountAmount}`);
+        setCouponCode(json.data.code);
+      })
+      .catch((err) => {
+        console.error(err);
+        setCouponError(err.message || "Failed to apply coupon");
+        setAppliedCoupon(null);
+      });
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponSuccess("");
+    setCouponError("");
+  };
+
   const handleIncrement = (id: string) => {
     const item = cart.items.find((i) => i.id === id);
     if (!item) return;
@@ -25,11 +91,6 @@ export default function CartPage() {
     if (!item) return;
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: Math.max(item.quantity - 1, 1) } });
   };
-
-  const totalAmount = cart.items.reduce(
-    (sum: number, item: CartItem) => sum + item.price * item.quantity,
-    0
-  );
 
   return (
     <div className="container mx-auto px-4 py-10">
@@ -155,32 +216,128 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Cart Summary */}
-          <div className="flex flex-col md:flex-row md:justify-between gap-6 mt-8">
-            <div className="flex gap-2 h-10 w-full md:w-1/3">
-              <input
-                type="text"
-                placeholder="Coupon code"
-                className="border px-3 py-2 rounded w-full"
-              />
-              <button className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-                Apply
-              </button>
+          {/* Coupon codes list and Cart Summary */}
+          <div className="flex flex-col lg:flex-row lg:justify-between gap-8 mt-10 border-t border-gray-150 pt-8">
+            <div className="w-full lg:w-3/5 space-y-4">
+              <h4 className={`${londrina.className} text-2xl text-[#2e306a] font-semibold mb-2`}>Available Coupons & Offers</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {coupons.map((c) => {
+                  const eligible = totalAmount >= c.minOrder;
+                  const diff = c.minOrder - totalAmount;
+
+                  return (
+                    <div
+                      key={c._id || c.id}
+                      onClick={() => eligible && handleApplyCoupon(c.code)}
+                      className={`border rounded-2xl p-4 transition-all duration-300 relative select-none flex flex-col justify-between ${
+                        eligible
+                          ? "border-emerald-300 bg-emerald-50/30 hover:bg-emerald-50/70 cursor-pointer hover:border-emerald-400 hover:shadow-sm"
+                          : "border-gray-200 bg-gray-50/50 opacity-80"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="font-mono font-bold text-xs bg-white border border-dashed border-[#2e306a]/40 px-2.5 py-1 rounded text-[#2e306a]">
+                            {c.code}
+                          </span>
+                          {eligible ? (
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-600 bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                              Eligible
+                            </span>
+                          ) : (
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-amber-600 bg-amber-100 px-2.5 py-0.5 rounded-full">
+                              Locked
+                            </span>
+                          )}
+                        </div>
+                        <p className="font-bold text-base text-[#2e306a] mt-3">
+                          {c.type === "percent" ? `${c.value}% OFF` : `Flat ₹${c.value} OFF`}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">{c.description}</p>
+                      </div>
+                      
+                      {!eligible && (
+                        <p className="text-[10px] text-amber-600 font-semibold mt-3 bg-amber-50 px-2 py-1 rounded border border-amber-200/50">
+                          Add ₹{diff} more to unlock this offer
+                        </p>
+                      )}
+                      {eligible && (
+                        <p className="text-[10px] text-emerald-600 font-semibold mt-3">
+                          ✓ Click to apply code
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+                {coupons.length === 0 && (
+                  <p className="text-sm text-gray-400">No active promotional codes available right now.</p>
+                )}
+              </div>
             </div>
 
-            <div className="border rounded-lg p-5 w-full md:w-1/3">
-              <h3 className="text-lg font-semibold mb-4">Cart Total</h3>
-              <div className="flex justify-between mb-2">
-                <span>Subtotal</span>
-                <span className="font-medium">&#x20B9;{totalAmount}</span>
+            {/* Cart Total Card */}
+            <div className="w-full lg:w-1/3">
+              <div className="border border-gray-300 rounded-2xl p-6 shadow-sm bg-white">
+                <h3 className="text-lg font-bold text-[#2e306a] mb-4">Cart Total</h3>
+                
+                {/* Coupon Apply Box */}
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    placeholder="Coupon code"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    disabled={!!appliedCoupon}
+                    className="border border-gray-300 px-3 py-2 rounded-lg text-sm w-full uppercase focus:outline-none focus:ring focus:ring-violet-200"
+                  />
+                  {appliedCoupon ? (
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold px-4 rounded-lg transition"
+                    >
+                      Remove
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleApplyCoupon()}
+                      disabled={!couponCode.trim()}
+                      className="bg-[#2e306a] hover:bg-[#1d1e44] text-white text-xs font-semibold px-4 rounded-lg transition disabled:opacity-50"
+                    >
+                      Apply
+                    </button>
+                  )}
+                </div>
+
+                {couponError && (
+                  <p className="text-xs text-rose-500 font-semibold mb-3">⚠ {couponError}</p>
+                )}
+                {couponSuccess && (
+                  <p className="text-xs text-emerald-600 font-semibold mb-3">✓ {couponSuccess}</p>
+                )}
+
+                <div className="space-y-2 border-t border-gray-100 pt-4 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span className="font-semibold text-gray-800">&#x20B9;{totalAmount}</span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="flex justify-between text-emerald-600 font-semibold">
+                      <span>Discount ({appliedCoupon.code})</span>
+                      <span>-&#x20B9;{appliedCoupon.discountAmount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t border-dashed border-gray-200 pt-3 text-[#2e306a]">
+                    <span className="font-bold text-base">Total</span>
+                    <span className="font-black text-xl">
+                      &#x20B9;{appliedCoupon ? Math.max(0, totalAmount - appliedCoupon.discountAmount) : totalAmount}
+                    </span>
+                  </div>
+                </div>
+
+                <button className="bg-[#FFE926] hover:bg-[#ebd51e] w-full py-3.5 mt-5 rounded-xl text-[#1e1e4d] font-bold cursor-pointer transition shadow-sm text-center block">
+                  <Link href="/checkout" className="w-full h-full block">Proceed to checkout</Link>
+                </button>
               </div>
-              <div className="flex justify-between mb-4">
-                <span>Total</span>
-                <span className="font-bold text-lg">&#x20B9;{totalAmount}</span>
-              </div>
-              <button className="bg-[#FFE926] w-full py-3 rounded text-[#1e1e4d] font-semibold cursor-pointer">
-                <Link href="/checkout">Proceed to checkout</Link>
-              </button>
             </div>
           </div>
         </>

@@ -37,6 +37,60 @@ export default function CheckoutPage() {
     paymentMethod: "card",
   });
 
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [applying, setApplying] = useState(false);
+  const [couponMessage, setCouponMessage] = useState("");
+  const [couponStatus, setCouponStatus] = useState<"success" | "error" | "">("");
+
+  const subtotal = getCartTotal();
+  const shipping = 40;
+  const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
+  const total = Math.max(0, subtotal + shipping - discountAmount);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    try {
+      setApplying(true);
+      setCouponMessage("");
+      setCouponStatus("");
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons/validate`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          code: couponCode,
+          orderTotal: subtotal,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) {
+        throw new Error(json.message || "Invalid coupon code");
+      }
+
+      setAppliedCoupon(json.data);
+      setCouponMessage(`Coupon applied! You saved ₹${json.data.discountAmount}`);
+      setCouponStatus("success");
+    } catch (err: any) {
+      console.error(err);
+      setCouponMessage(err.message || "Failed to apply coupon");
+      setCouponStatus("error");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponMessage("");
+    setCouponStatus("");
+  };
+
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
 
@@ -282,19 +336,63 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {/* Promo Code Coupon Section */}
+          <div className="mt-6 border border-gray-300 rounded-2xl p-4 space-y-3">
+            <h3 className={`${londrina.className} text-xl font-semibold`}>Promo / Coupon Code</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Enter Coupon Code"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                disabled={!!appliedCoupon}
+                className="border border-gray-300 rounded-lg p-2.5 flex-1 uppercase text-sm focus:outline-none focus:ring focus:ring-emerald-200"
+              />
+              {appliedCoupon ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveCoupon}
+                  className="bg-rose-500 hover:bg-rose-600 text-white font-medium rounded-lg px-4 text-sm transition"
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleApplyCoupon}
+                  disabled={!couponCode.trim() || applying}
+                  className="bg-[#2e306a] hover:bg-[#1d1e44] text-white font-medium rounded-lg px-5 text-sm transition disabled:opacity-50"
+                >
+                  {applying ? "Applying..." : "Apply"}
+                </button>
+              )}
+            </div>
+            {couponMessage && (
+              <p className={`text-xs ${couponStatus === "success" ? "text-emerald-600" : "text-rose-500"} font-medium`}>
+                {couponMessage}
+              </p>
+            )}
+          </div>
+
           {/* Totals */}
           <div className="mt-6 border border-gray-300 rounded-2xl p-4 pt-4 space-y-2 text-gray-700">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span>&#8377;{getCartTotal()}</span>
+              <span>&#8377;{subtotal}</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex justify-between text-emerald-600 font-medium">
+                <span>Discount Applied ({appliedCoupon?.code})</span>
+                <span>-&#8377;{discountAmount}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span>&#8377;40.00</span>
+              <span>&#8377;{shipping.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between font-bold text-lg">
+            <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2">
               <span>Total</span>
-              <span>&#8377;{getCartTotal() + 40}</span>
+              <span>&#8377;{total}</span>
             </div>
           </div>
         </div>
