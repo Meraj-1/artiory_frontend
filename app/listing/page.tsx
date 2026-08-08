@@ -95,13 +95,13 @@ type Product = {
 
 
 
-const categoryGroups: { label: string; icon: string; items: string[] }[] = [
-  { label: "Art & Craft", icon: "🎨", items: ["Crayons", "Water Colours", "Puzzle Crayons"] },
-  { label: "Stationery", icon: "✏️", items: ["Pencil Box", "Compass Box", "Slate", "Stationery Combo Set", "Mechanical Sharpener", "Pencil Case", "Diary"] },
-  { label: "Bags", icon: "🎒", items: ["Tiffin Bags", "Cross Bags", "Folder Bags", "Fancy Bags", "Vanity Case"] },
-  { label: "Pouches", icon: "👜", items: ["Soft Pouch", "Silicone Pouch"] },
-  { label: "Drinkware", icon: "🥤", items: ["Sippers", "500 ml Sipper", "900 ml Plastic Bottle Sipper", "Tumbler"] },
-  { label: "Gifts & Fun", icon: "🎁", items: ["Metal Money Box", "Gift Hamper", "Mini Fan"] },
+const categoryGroups: { label: string;  items: string[] }[] = [
+  { label: "Art & Craft", items: ["Crayons", "Water Colours", "Puzzle Crayons"] },
+  { label: "Stationery", items: ["Pencil Box", "Compass Box", "Slate", "Stationery Combo Set", "Mechanical Sharpener", "Pencil Case", "Diary"] },
+  { label: "Bags", items: ["Tiffin Bags", "Cross Bags", "Folder Bags", "Fancy Bags", "Vanity Case"] },
+  { label: "Pouches",  items: ["Soft Pouch", "Silicone Pouch"] },
+  { label: "Drinkware",  items: ["Sippers", "500 ml Sipper", "900 ml Plastic Bottle Sipper", "Tumbler"] },
+  { label: "Gifts & Fun",  items: ["Metal Money Box", "Gift Hamper", "Mini Fan"] },
 ];
 
 
@@ -339,7 +339,7 @@ export default function ProductListPage() {
                 className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
                 onClick={() => toggleGroup(group.label)}
               >
-                <span className="flex items-center gap-2"><span>{group.icon}</span>{group.label}</span>
+                <span className="flex items-center gap-2">{group.label}</span>
                 <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openGroups.includes(group.label) ? "rotate-180" : ""}`} />
               </button>
               {openGroups.includes(group.label) && (
