@@ -1,4 +1,3 @@
-// components/layout/Header.tsx
 "use client";
 
 import React, { useRef, useReducer, useState } from "react";
@@ -89,7 +88,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="p-4 sticky top-0 bg-white z-50">
+      <header className="p-1 sticky top-0 bg-white z-50">
         {menuOpenRef.current && (
           <div
             className="fixed inset-0 bg-black/70 z-40 transition-opacity duration-500"
@@ -107,7 +106,7 @@ const Header: React.FC = () => {
               {menuOpenRef.current ? <X size={28} /> : <Menu size={28} />}
             </button>
 
-            <button onClick={() => console.log("search clicked")}>
+            {/* <button onClick={() => console.log("search clicked")}>
               <Image
                 src="/search-icon.svg"
                 className="w-6 md:w-7 cursor-pointer"
@@ -115,7 +114,7 @@ const Header: React.FC = () => {
                 width={25}
                 height={20}
               />
-            </button>
+            </button> */}
           </div>
 
           <div className="flex justify-center flex-1 md:flex-none">
@@ -123,7 +122,7 @@ const Header: React.FC = () => {
               <Image
                 width={100}
                 height={50}
-                className="h-auto w-30 lg:w-40 cursor-pointer"
+                className="h-auto w-30 lg:w-30 cursor-pointer"
                 src="/Artiory-Logo.svg"
                 alt="logo"
               />
