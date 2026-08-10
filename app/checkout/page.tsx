@@ -55,7 +55,7 @@ export default function CheckoutPage() {
       setCouponMessage("");
       setCouponStatus("");
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons/validate`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com"}/api/coupons/validate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

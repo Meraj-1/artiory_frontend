@@ -28,7 +28,7 @@ export default function CartPage() {
 
   // Fetch available coupons
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons`)
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com"}/api/coupons`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && Array.isArray(json.data)) {
@@ -47,7 +47,7 @@ export default function CartPage() {
     setCouponError("");
     setCouponSuccess("");
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/coupons/validate`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com"}/api/coupons/validate`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
