@@ -8,56 +8,6 @@ import { useWishlist } from "../context/whishlist/WishlistContext";
 import { useCart } from "../context/cart/Cartcontext";
 import { ToastContainer, toast } from "react-toastify";
 
-const fallbackProducts: Product[] = [
-  {
-    id: "1",
-    name: "Jumbo Multicolored Crayon",
-    price: 299,
-    oldPrice: 399,
-    image: "/product/1toys1.jpg",
-    images: ["/product/1toys1.jpg", "/product/1toys2.jpg", "/product/1toys3.jpg"],
-    category: "Crayons",
-    shortDescription: "Made from child-friendly, non-toxic materials for vibrant, easy coloring.",
-    description: "Bring your child's imagination to life with the Artiory Jumbo Multicolored Crayon Set.",
-    isSale: true,
-  },
-  {
-    id: "2",
-    name: "Crocodile Puzzle Crayon",
-    price: 299,
-    oldPrice: 399,
-    image: "/product/2toys1.jpg",
-    images: ["/product/2toys1.jpg", "/product/2toys2.jpg", "/product/2toys3.jpg", "/product/2toys4.jpg"],
-    category: "Puzzle Crayons",
-    shortDescription: "Interactive puzzle crayon that turns coloring into a fun learning activity.",
-    description: "A playful crayon set that can be stacked into a crocodile puzzle.",
-    isSale: true,
-  },
-  {
-    id: "3",
-    name: "Dino Puzzle Crayon",
-    price: 299,
-    oldPrice: 399,
-    image: "/product/3toys1.jpg",
-    images: ["/product/3toys1.jpg", "/product/3toys2.jpg", "/product/3toys3.jpg", "/product/3toys4.jpg"],
-    category: "Puzzle Crayons",
-    shortDescription: "A fun dinosaur-shaped crayon set for creative play and learning.",
-    description: "Designed in a fun dinosaur shape, this stackable puzzle crayon combines vibrant colors with interactive play.",
-    isSale: true,
-  },
-  {
-    id: "4",
-    name: "Dino Puzzle Crayon",
-    price: 299,
-    oldPrice: 399,
-    image: "/product/4toys1.jpg",
-    images: ["/product/4toys1.jpg", "/product/4toys2.jpg", "/product/4toys3.jpg"],
-    category: "Puzzle Crayons",
-    shortDescription: "Spark your child's imagination with this interactive coloring companion.",
-    description: "Crafted from child-safe materials, ideal for school projects and birthday hampers.",
-    isSale: true,
-  },
-];
 
 const londrina = Londrina_Solid({
   weight: ["100", "300", "400", "900"],
@@ -331,9 +281,9 @@ export default function ProductListPage() {
             }`}
             onClick={() => setSelectedCategory("All")}
           >
-            <span>🛍️</span> All Products
+             All Products
           </button>
-          {categoryGroups.map((group) => (
+          {/* {categoryGroups.map((group) => (
             <div key={group.label}>
               <button
                 className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
@@ -358,7 +308,87 @@ export default function ProductListPage() {
                 </div>
               )}
             </div>
-          ))}
+          ))} */}
+          {categoryGroups.map((group) => (
+  <div key={group.label}>
+    {/* Category Group */}
+    <button
+      type="button"
+      className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
+      onClick={() => toggleGroup(group.label)}
+    >
+      <span className="flex items-center gap-2">
+        {group.label}
+      </span>
+
+      <ChevronDown
+        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
+          openGroups.includes(group.label) ? "rotate-180" : ""
+        }`}
+      />
+    </button>
+
+    {/* Categories */}
+    {openGroups.includes(group.label) && (
+      <div className="ml-4 mb-1 space-y-1 border-l-2 border-[#00b8a2]/20 pl-3">
+        {group.items.map((cat) => {
+          const isSelected = selectedCategory === cat;
+
+          return (
+            <label
+              key={cat}
+              className={`flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-xs transition-all cursor-pointer ${
+                isSelected
+                  ? "bg-[#00b8a2]/10 text-[#00b8a2] font-medium"
+                  : "text-gray-500 hover:text-[#2e306a] hover:bg-gray-50"
+              }`}
+            >
+              {/* Checkbox */}
+              <input
+                type="checkbox"
+                checked={isSelected}
+                onChange={() =>
+                  setSelectedCategory(isSelected ? "" : cat)
+                }
+                className="peer sr-only"
+              />
+
+              {/* Custom Checkbox */}
+              <span
+                className={`flex items-center justify-center w-4 h-4 rounded border transition-all duration-200 ${
+                  isSelected
+                    ? "bg-[#00b8a2] border-[#00b8a2]"
+                    : "bg-white border-gray-300 group-hover:border-[#00b8a2]"
+                }`}
+              >
+                {isSelected && (
+                  <svg
+                    className="w-3 h-3 text-white"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="3"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M5 12l4 4L19 7"
+                    />
+                  </svg>
+                )}
+              </span>
+
+              {/* Category Name */}
+              <span className="flex-1">
+                {cat}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    )}
+  </div>
+))}
         </div>
       </div>
 

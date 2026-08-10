@@ -10,11 +10,13 @@ const londrina = Londrina_Solid({
 });
 
 const categories = [
-  { img: "/category/1.png", title: "School Essentials" },
-  { img: "/category/2.png", title: "Toys and Games" },
+  { img: "/category/1.png", title: "Art & Craft" },
+  { img: "/category/2.png", title: "Stationery" },
   { img: "/category/3.png", title: "Art & Craft" },
-  { img: "/category/4.png", title: "Hamper for kid's" },
-  { img: "/category/5.png", title: "Baby Essentials" },
+  { img: "/category/4.png", title: "Bags" },
+  { img: "/category/5.png", title: "Pouches" },
+  { img: "/category/5.png", title: "Drinkware" },
+  { img: "/category/5.png", title: "Gifts & Fun" },
 ];
 
 const ShopByCategory = () => {

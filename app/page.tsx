@@ -17,8 +17,8 @@ export default function Home() {
       {/* <Header/> */}
       <Hero />
       <OurServices/>
-      <ProductByAge/>
-      <FeaturedSec/>
+      {/* <ProductByAge/> */}
+      {/* <FeaturedSec/> */}
       <ShopByCategory/>
       {/* <TrendingReel/> */}
       <Reels />
