@@ -524,13 +524,13 @@ export default function ProductListPage() {
                         <img
                           src={p.image}
                           alt={p.name}
-                          className="h-full w-full object-contain p-6 transition-opacity duration-400 group-hover:opacity-0"
+                          className="h-full w-full p- transition-opacity duration-400 group-hover:opacity-0"
                         />
                         {p.images[1] && (
                           <img
                             src={p.images[1]}
                             alt={p.name}
-                            className="h-full w-full object-contain p-6 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400"
+                            className="h-full w-[100vh] p- absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-400"
                           />
                         )}
                       </Link>
