@@ -27,7 +27,7 @@ const Hero = () => {
           </p>
           <div>
             <p className="text-[#2e306a]">📍 Address</p>
-            <p className="text-[#2e306a]">101 Chhadva residency, Plot no 7, Moti Baug, <br/> Behind Maitri Park. Behind Ratna store, <br/> V N Purav Marg, Chembur, Mumbai 400071</p>
+            <p className="text-[#2e306a]">Chhadva residency, V N Purav Marg, Chembur, Mumbai 400071</p>
           </div>
           <div>
             <p className="text-[#2e306a]">📞 Phone</p>

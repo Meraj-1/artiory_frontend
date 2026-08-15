@@ -34,7 +34,7 @@ export default function CheckoutPage() {
     phone: "",
     email: "",
     notes: "",
-    paymentMethod: "card",
+    paymentMethod: "sabpaisa",
   });
 
   const [couponCode, setCouponCode] = useState("");
@@ -89,6 +89,86 @@ export default function CheckoutPage() {
     setCouponCode("");
     setCouponMessage("");
     setCouponStatus("");
+  };
+
+  const [placing, setPlacing] = useState(false);
+
+  const handlePlaceOrder = async () => {
+    if (!form.lastName || !form.address || !form.city || !form.state || !form.email || !form.phone) {
+      alert("Please fill in all required fields marked with *");
+      return;
+    }
+
+    if (cartItems.length === 0) {
+      alert("Your cart is empty");
+      return;
+    }
+
+    try {
+      setPlacing(true);
+
+      const orderItems = cartItems.map((item) => ({
+        name: item.name,
+        qty: item.quantity,
+        price: item.price,
+      }));
+
+      const orderRes = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderItems, totalPrice: total }),
+      });
+
+      const orderJson = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderJson.message || "Failed to create order");
+      }
+
+      const orderId = orderJson._id;
+
+      if (form.paymentMethod === "sabpaisa") {
+        const paymentRes = await fetch("/api/payment/sabpaisa/initiate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ orderId }),
+        });
+
+        const paymentJson = await paymentRes.json();
+        if (!paymentRes.ok) {
+          throw new Error(paymentJson.message || "Failed to initialize payment gateway");
+        }
+
+        const { encData, clientCode, sabpaisaUrl } = paymentJson;
+
+        // Dynamically build and submit redirection form
+        const formEl = document.createElement("form");
+        formEl.method = "POST";
+        formEl.action = sabpaisaUrl;
+
+        const clientCodeInput = document.createElement("input");
+        clientCodeInput.type = "hidden";
+        clientCodeInput.name = "clientCode";
+        clientCodeInput.value = clientCode;
+        formEl.appendChild(clientCodeInput);
+
+        const encDataInput = document.createElement("input");
+        encDataInput.type = "hidden";
+        encDataInput.name = "encData";
+        encDataInput.value = encData;
+        formEl.appendChild(encDataInput);
+
+        document.body.appendChild(formEl);
+        formEl.submit();
+      } else {
+        alert("Order placed successfully! (Cash on Delivery)");
+        window.location.href = `/checkout/status?status=paid&orderId=${orderId}`;
+      }
+    } catch (err: any) {
+      console.error("Place Order Error:", err);
+      alert(err.message || "Something went wrong while placing your order. Please try again.");
+    } finally {
+      setPlacing(false);
+    }
   };
 
   const [savedAddresses, setSavedAddresses] = useState<any[]>([]);
@@ -264,6 +344,16 @@ export default function CheckoutPage() {
             <div className="flex items-center gap-4 mb-4">
               <input
                 type="radio"
+                checked={form.paymentMethod === "sabpaisa"}
+                onChange={() => setForm({ ...form, paymentMethod: "sabpaisa" })}
+              />
+              <span className="font-medium text-[#2e306a]">SabPaisa (UPI, Cards, NetBanking)</span>
+              <span className="text-xs bg-[#e0fcf4] text-[#00b8a2] px-2 py-0.5 rounded font-semibold ml-2">Popular</span>
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <input
+                type="radio"
                 checked={form.paymentMethod === "card"}
                 onChange={() => setForm({ ...form, paymentMethod: "card" })}
               />
@@ -299,8 +389,12 @@ export default function CheckoutPage() {
               <span className="font-medium">PayPal</span>
             </div>
 
-            <button className="bg-[#00b8a2] text-white font-semibold rounded-lg w-full mt-6 py-3 hover:bg-[#009e8b] transition">
-              Place Order
+            <button 
+              onClick={handlePlaceOrder}
+              disabled={placing}
+              className="bg-[#00b8a2] text-white font-semibold rounded-lg w-full mt-6 py-3 hover:bg-[#009e8b] transition disabled:opacity-50"
+            >
+              {placing ? "Processing..." : "Place Order"}
             </button>
           </div>
         </div>

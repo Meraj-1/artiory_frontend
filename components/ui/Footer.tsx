@@ -52,7 +52,7 @@ const Footer = () => {
         {/* Right Section - Contact */}
         <div className="md:text-left">
           <h3 className="font-bold text-lg mb-3">Contact us</h3>
-          <p>101 Chhadva residency, Plot no 7, Moti Baug<br/>Behind Maitri Park. Behind Ratna store, V N Purav<br/>Marg, Chembur, Mumbai 400071</p>
+          <p>Chhadva residency, V N Purav <br/>Marg, Chembur, Mumbai 400071</p>
           <p className="mt-3">
             Email: <Link href="mailto:info@arttory.com" className="hover:underline">contact@artiory.com</Link>
           </p>
