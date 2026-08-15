@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Londrina_Solid } from "next/font/google";
-import Image from "next/image";
 import { useCart } from "@/app/context/cart/Cartcontext";
-import { HeartIcon, ShoppingCart, Star } from "lucide-react";
+import { HeartIcon, ShoppingCart } from "lucide-react";
 import { ToastContainer, toast } from "react-toastify";
 import Link from "next/link";
 import { useWishlist } from "@/app/context/whishlist/WishlistContext";
@@ -15,33 +14,15 @@ const londrina = Londrina_Solid({
 });
 
 type Product = {
-  id: number;
+  id: string;
   name: string;
   price: number;
   oldPrice?: number;
   image: string;
   images: string[];
-  // rating: number;
   category: string;
   shortDescription: string;
-  description: string;
   isSale?: boolean;
-  ageGroup: string;
-};
-
-const RatingStars: React.FC<{ rating: number }> = ({ rating }) => {
-  return (
-    <div className="flex gap-1">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          className={`w-4 h-4 ${
-            index < rating ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-300"
-          }`}
-        />
-      ))}
-    </div>
-  );
 };
 
 const Products: React.FC = () => {
@@ -151,7 +132,26 @@ const Products: React.FC = () => {
   };
 
   if (loading) {
-    return <div className="text-center py-16 text-gray-400">Loading products...</div>;
+    return (
+      <section className={`${londrina.className} py-16 bg-white`}>
+        <div className="text-center mb-10 px-4">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-[#00b8a2]">OUR PRODUCTS.</h1>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 w-full max-w-7xl mx-auto px-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+              <div className="aspect-square w-full bg-gray-200 animate-pulse" />
+              <div className="px-3 pt-2 pb-3 flex flex-col gap-2">
+                <div className="h-2.5 w-16 bg-gray-200 rounded animate-pulse" />
+                <div className="h-3.5 w-full bg-gray-200 rounded animate-pulse" />
+                <div className="h-3 w-3/4 bg-gray-200 rounded animate-pulse" />
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mt-1" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+    );
   }
 
   if (products.length === 0) {
@@ -169,84 +169,77 @@ const Products: React.FC = () => {
           <Link href="/listing">View All</Link>
         </p>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-2 w-full h-auto sm:w-[86%] md:w-[90%] lg:w-[76%] md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5 mx-auto md:px-4 px-2">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 w-full max-w-7xl mx-auto px-4">
         {paginatedProducts.map((product) => (
           <div key={product.id} className="w-full flex justify-center">
             <Link
               href={`/product/${product.id}`}
               className="w-full flex justify-center"
             >
-              <div className="group relative flex h-[430px] w-full flex-col rounded-2xl bg-white">
-                <span className="absolute top-4 left-4 bg-[#00b8a2] text-white text-xs font-bold px-3 py-1 rounded-full z-10">
-                  SALE
-                </span>
+              <div className="group relative flex flex-col w-full rounded-2xl bg-white border border-[#8bd2c9] overflow-hidden transition-all duration-300 hover:shadow-lg">
 
-                {/* Icons */}
-                <div className="absolute top-2 right-4 flex gap-2 z-10">
+                {/* Badges */}
+                <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                  {product.isSale && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">SALE</span>
+                  )}
+                  {product.oldPrice && product.oldPrice > product.price && (
+                    <span className="bg-[#00b8a2] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      -{Math.round(((product.oldPrice - product.price) / product.oldPrice) * 100)}%
+                    </span>
+                  )}
+                </div>
+
+                {/* Wishlist & Cart icons */}
+                <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button
-                    onClick={() => handleWishlist(product)}
-                    className="absolute top-3 right-2 cursor-pointer"
+                    onClick={(e) => { e.preventDefault(); handleWishlist(product); }}
+                    className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center"
                   >
                     <HeartIcon
-                      id={String(product.id)}
-                      fill={
-                        wishlistState.items.some(
-                          (item) => item.id === String(product.id)
-                        )
-                          ? "#00c8a2"
-                          : "none"
-                      }
-                      className="stroke-[#8bd2c9] stroke-2"
+                      className="w-4 h-4 stroke-[#8bd2c9] stroke-2"
+                      fill={wishlistState.items.some((item) => item.id === product.id) ? "#00c8a2" : "none"}
                     />
+                  </button>
+                  <button
+                    onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
+                    className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center"
+                  >
+                    <ShoppingCart className="w-4 h-4 text-[#00b8a2]" />
                   </button>
                 </div>
 
-                <div className="absolute top-12 cursor-pointer right-6 flex gap-2 z-10">
-                  <ShoppingCart
-                    onClick={() => handleAddToCart(product)}
-                    className="stroke-[#8bd2c9] stroke-2"
+                {/* Image */}
+                <div className="relative aspect-square w-full bg-gray-50">
+                  <img
+                    src={product.image || "/product/placeholder.svg"}
+                    alt={product.name}
+                    className="h-full w-full contain transition-opacity duration-300 group-hover:opacity-0"
                   />
-                </div>
-
-                {/* Product Image */}
-                <div className="flex h-[260px] w-full items-center justify-center rounded-2xl border border-[#8bd2c9] transition-all duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
-                  <div className="relative flex h-full w-full items-center justify-center p-4">
-                    <Image
-                      src={product.image}
+                  {product.images[1] && (
+                    <img
+                      src={product.images[1]}
                       alt={product.name}
-                      width={295}
-                      height={295}
-                      className="object-contain p-5 duration-500 group-hover:opacity-0"
+                      className="absolute inset-0 h-full w-full contain opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                     />
-                    {product.images[1] && (
-                      <Image
-                        src={product.images[1]}
-                        alt={product.name}
-                        fill
-                        className="object-contain p-5 opacity-0 duration-500 group-hover:opacity-100"
-                      />
-                    )}
-                  </div>
+                  )}
                 </div>
 
                 {/* Info */}
-                <div className="flex flex-1 flex-col justify-between px-2 pt-3 pb-4">
-                  <h2 className="line-clamp-2 min-h-[52px] text-[17px] font-medium tracking-[0.2px] text-[#2e306a]">
-                    {product.name}
-                  </h2>
-                  <div className="flex gap-1">
-                    <p
-                      className={`text-gray-400 font-light text-lg line-through ${londrina.className}`}
-                    >
-                      &#x20B9;{product.price}.00
-                    </p>
-                    <p
-                      className={`text-[#00b8a2] font-light text-lg ${londrina.className}`}
-                    >
-                      &#x20B9;{product.price}.00
-                    </p>
+                <div className="flex flex-col gap-1 px-3 pt-2 pb-3">
+                  {product.category && (
+                    <span className="text-[10px] text-[#00b8a2] font-medium uppercase tracking-wide">{product.category}</span>
+                  )}
+                  <h2 className="line-clamp-2 text-sm font-semibold text-[#2e306a]">{product.name}</h2>
+                  {product.shortDescription && (
+                    <p className="text-xs text-gray-400 line-clamp-1">{product.shortDescription}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{product.price}</span>
+                    {product.oldPrice && product.oldPrice > product.price && (
+                      <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{product.oldPrice}</span>
+                    )}
                   </div>
-                  {/* <RatingStars rating={product.rating} /> */}
                 </div>
               </div>
             </Link>
