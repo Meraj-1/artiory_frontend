@@ -21,7 +21,7 @@ export default function Home() {
       {/* <FeaturedSec/> */}
       <ShopByCategory/>
       {/* <TrendingReel/> */}
-      <Reels />
+      {/* <Reels /> */}
       <Product/>
       {/* <Subscribe /> */}
       {/* <Footer/> */}
