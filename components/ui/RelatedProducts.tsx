@@ -1,9 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { Londrina_Solid } from "next/font/google";
-import Image from "next/image";
 import Link from "next/link";
-import { HeartIcon, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 import { useCart } from "@/app/context/cart/Cartcontext";
 import { useWishlist } from "@/app/context/whishlist/WishlistContext";
 import { toast } from "react-toastify";
@@ -15,31 +14,15 @@ const londrina = Londrina_Solid({
 });
 
 type Product = {
-  id: string | number;
+  id: string;
   image: string;
+  images: string[];
   name: string;
   price: number;
-  sku: string;
-  ageGroup: string;
+  oldPrice?: number;
   category: string;
   shortDescription: string;
-  description: string;
-  rating: number;
-};
-
-const RatingStars: React.FC<{ rating: number }> = ({ rating }) => {
-  return (
-    <div className="flex gap-1 mt-1">
-      {Array.from({ length: 5 }).map((_, index) => (
-        <Star
-          key={index}
-          className={`w-4 h-4 ${
-            index < rating ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-300"
-          }`}
-        />
-      ))}
-    </div>
-  );
+  isSale?: boolean;
 };
 
 interface RelatedProductsProps {
@@ -51,201 +34,141 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchRelated = async () => {
-      try {
-        const res = await fetch("/api/products/store", { cache: "no-store" });
-        const data = await res.json();
-        
-        const list = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.products)
-            ? data.products
-            : Array.isArray(data?.data)
-              ? data.data
-              : [];
-        
-        let filtered = list
-          .map((item: any, index: number) => ({
-            id: String(item._id || item.id || index + 1),
-            name: item.productName || item.name || "",
-            price: Number(item.sellingPrice ?? item.price ?? 0),
-            image: item.image || item.thumbnail || (item.images && item.images[0]) || "/product/placeholder.svg",
-            images: item.images || [],
-            sku: item.skuCode || item.sku || "",
-            ageGroup: item.ageGroup || "3+",
-            category: item.category || "",
-            shortDescription: item.shortDescription || item.shortDesc || "",
-            description: item.description || "",
-            rating: item.rating || 4,
-          }))
-          .filter((p: any) => String(p.id) !== String(currentProductId));
-
-        if (category) {
-          const sameCategory = filtered.filter((p: any) => p.category === category);
-          filtered = sameCategory.length > 0 ? sameCategory : filtered;
-        }
-
-        setProducts(filtered.slice(0, 4));
-      } catch (err) {
-        console.error("Failed to fetch related products", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRelated();
-  }, [category, currentProductId]);
-
   const { dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
 
-  const handleAddToCart = (product: Product) => {
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: String(product.id),
-        name: product.name,
-        price: product.price,
-        image: product.image,
-        quantity: 1,
-      },
-    });
-    toast.success(`${product.name} added to cart!`, {
-      position: "bottom-right",
-      autoClose: 800,
-    });
+  useEffect(() => {
+    fetch("/api/products/store", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        const list: any[] = Array.isArray(data) ? data : data?.products ?? data?.data ?? [];
+        const mapped: Product[] = list.map((item, i) => {
+          const price = Number(item.sellingPrice ?? item.price ?? 0);
+          const mrp = Number(item.mrp ?? item.oldPrice ?? 0);
+          const rawImages: string[] = Array.isArray(item.images)
+            ? item.images.filter((img: unknown) => typeof img === "string" && (img as string).trim())
+            : [];
+          const image = typeof item.image === "string" && item.image.trim() ? item.image : rawImages[0] ?? "";
+          const images = [...new Set(rawImages.length > 0 ? rawImages : image ? [image] : [])];
+          return {
+            id: String(item._id ?? item.id ?? i + 1),
+            name: item.productName ?? item.name ?? "",
+            price,
+            oldPrice: mrp > price ? mrp : undefined,
+            image,
+            images,
+            category: item.category ?? "",
+            shortDescription: item.shortDescription ?? item.shortDesc ?? "",
+            isSale: Boolean(item.isSale ?? item.onSale ?? (mrp > 0 && price > 0 && price < mrp)),
+          };
+        });
+
+        const filtered = mapped.filter((p) => String(p.id) !== String(currentProductId));
+        const sameCategory = filtered.filter((p) => !category || p.category === category);
+        const result = sameCategory.length >= 5
+          ? sameCategory
+          : [...sameCategory, ...filtered.filter((p) => p.category !== category)].slice(0, 5);
+
+        setProducts(result.slice(0, 5));
+      })
+      .catch(() => setProducts([]))
+      .finally(() => setLoading(false));
+  }, [category, currentProductId]);
+
+  const handleAddToCart = (p: Product) => {
+    dispatch({ type: "ADD_ITEM", payload: { id: p.id, name: p.name, price: p.price, image: p.image, quantity: 1 } });
+    toast.success(`${p.name} added to cart!`, { position: "bottom-right", autoClose: 800 });
   };
 
-  const handleWishlist = (product: Product) => {
-    const isInWishlist = wishlistState.items.some(
-      (item) => item.id === String(product.id)
-    );
-
-    if (isInWishlist) {
-      wishlistDispatch({
-        type: "REMOVE_FROM_WISHLIST",
-        payload: { id: String(product.id) },
-      });
-      toast.info(`${product.name} removed from Wishlist!`, {
-        position: "bottom-right",
-        autoClose: 800,
-      });
+  const handleWishlist = (p: Product) => {
+    const isIn = wishlistState.items.some((item) => item.id === p.id);
+    if (isIn) {
+      wishlistDispatch({ type: "REMOVE_FROM_WISHLIST", payload: { id: p.id } });
+      toast.info(`${p.name} removed from Wishlist!`, { position: "bottom-right", autoClose: 800 });
     } else {
-      wishlistDispatch({
-        type: "ADD_TO_WISHLIST",
-        payload: {
-          id: String(product.id),
-          name: product.name,
-          price: product.price,
-          image: product.image,
-        },
-      });
-      toast.success(`${product.name} added to Wishlist!`, {
-        position: "bottom-right",
-        autoClose: 800,
-      });
+      wishlistDispatch({ type: "ADD_TO_WISHLIST", payload: { id: p.id, name: p.name, price: p.price, image: p.image } });
+      toast.success(`${p.name} added to Wishlist!`, { position: "bottom-right", autoClose: 800 });
     }
   };
 
-  if (loading) {
-    return <div className="text-center py-10 text-gray-400">Loading related products...</div>;
-  }
-
-  if (products.length === 0) {
-    return null;
-  }
+  if (!loading && products.length === 0) return null;
 
   return (
-    <section className={`${londrina.className} py-16 bg-white`}>
-      {/* Heading */}
-      <div className="text-center mb-10 px-4">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-[#00b8a2]">
-          RELATED PRODUCTS
-        </h1>
-      </div>
+    <section className={`${londrina.className} py-10`}>
+      <h2 className="text-3xl md:text-4xl font-extrabold text-[#00b8a2] mb-8">Related Products</h2>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 w-[90%] mx-auto">
-        {products.map((product) => (
-          <div key={product.id} className="w-full flex justify-center">
-            <Link
-              href={`/product/${product.id}`}
-              className="w-full flex justify-center"
-            >
-              <div className="bg-white h-auto flex flex-col items-center w-full aspect-[295/398] relative">
-                <span className="absolute top-4 left-4 bg-[#00b8a2] text-white text-xs font-bold px-3 py-1 rounded-full z-10">
-                  SALE
-                </span>
-
-                {/* Icons */}
-                <div className="absolute top-2 right-4 flex gap-2 z-10">
-                  <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleWishlist(product);
-                    }}
-                    className="absolute top-3 right-2 cursor-pointer"
-                  >
-                    <HeartIcon
-                      id={String(product.id)}
-                      fill={
-                        wishlistState.items.some(
-                          (item) => item.id === String(product.id)
-                        )
-                          ? "#00c8a2"
-                          : "none"
-                      }
-                      className="stroke-[#8bd2c9] stroke-2"
-                    />
-                  </button>
-                </div>
-
-                <div className="absolute top-12 cursor-pointer right-6 flex gap-2 z-10">
-                  <ShoppingCart
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleAddToCart(product);
-                    }}
-                    className="stroke-[#8bd2c9] stroke-2"
-                  />
-                </div>
-
-                {/* Product Image */}
-                <div className="w-full border transition-all ease-in-out duration-500 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-[#8bd2c9] rounded-2xl cursor-pointer p-3 flex justify-center">
-                  <div className="w-48 h-48 sm:w-56 sm:h-56 flex justify-center items-center">
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      width={295}
-                      height={295}
-                      className="object-contain w-full h-full aspect-square"
-                    />
-                  </div>
-                </div>
-
-                {/* Info */}
-                <div className="w-full px-1 pb-4 pt-1">
-                  <h2 className="tracking-[0.2px] font-light text-[#2e306a] md:text-lg">
-                    {product.name}
-                  </h2>
-                  <div className="flex gap-1">
-                    <p
-                      className={`text-gray-400 font-light text-lg line-through ${londrina.className}`}
-                    >
-                      &#x20B9;{product.price + 100}.00
-                    </p>
-                    <p
-                      className={`text-[#00b8a2] font-light text-lg ${londrina.className}`}
-                    >
-                      &#x20B9;{product.price}.00
-                    </p>
-                  </div>
-                  <RatingStars rating={product.rating} />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        {loading
+          ? Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+                <div className="aspect-square w-full bg-gray-200 animate-pulse" />
+                <div className="px-3 pt-2 pb-3 flex flex-col gap-2">
+                  <div className="h-2.5 w-16 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-3.5 w-full bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mt-1" />
                 </div>
               </div>
-            </Link>
-          </div>
-        ))}
+            ))
+          : products.map((p) => {
+              const isWishlisted = wishlistState.items.some((item) => item.id === p.id);
+              const discount = p.oldPrice && p.oldPrice > p.price
+                ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100)
+                : null;
+              return (
+                <div key={p.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col">
+                  <Link href={`/product/${p.id}`} className="relative block aspect-square bg-gray-50 overflow-hidden">
+                    {/* Badges */}
+                    <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                      {p.isSale && <span className="bg-red-500 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">SALE</span>}
+                      {discount && <span className="bg-[#00b8a2] text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">-{discount}%</span>}
+                    </div>
+                    {/* Actions */}
+                    <div className="absolute top-2 right-2 z-10 flex flex-col gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center hover:scale-110 transition-transform"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleWishlist(p); }}
+                      >
+                        <Heart className={`w-4 h-4 ${isWishlisted ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-400"}`} />
+                      </button>
+                      <button
+                        className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center hover:scale-110 transition-transform"
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(p); }}
+                      >
+                        <ShoppingCart className="w-4 h-4 text-[#00b8a2]" />
+                      </button>
+                    </div>
+                    {/* Images */}
+                    {p.image
+                      ? <img src={p.image} alt={p.name} className="h-full w-full object-contain  transition-opacity duration-300 group-hover:opacity-0" />
+                      : <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs">No Image</div>
+                    }
+                    {p.images[1] && (
+                      <img src={p.images[1]} alt={p.name} className="h-full w-full object-contain p-4 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    )}
+                  </Link>
+
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    {p.category && <span className="text-[10px] text-[#00b8a2] font-medium uppercase tracking-wide">{p.category}</span>}
+                    <Link href={`/product/${p.id}`}>
+                      <h3 className="text-sm font-semibold text-[#2e306a] leading-snug line-clamp-2 hover:text-[#00b8a2] transition-colors">{p.name}</h3>
+                    </Link>
+                    {p.shortDescription && <p className="text-xs text-gray-400 line-clamp-1">{p.shortDescription}</p>}
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                      <div className="flex items-baseline gap-1.5">
+                        <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{p.price}</span>
+                        {p.oldPrice && <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{p.oldPrice}</span>}
+                      </div>
+                      <button
+                        onClick={() => handleAddToCart(p)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors"
+                      >
+                        <ShoppingCart className="w-3 h-3" /> Add
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
       </div>
     </section>
   );
