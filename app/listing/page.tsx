@@ -202,9 +202,13 @@ export default function ProductListPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const catParam = params.get("category");
-      if (catParam) setSelectedCategory(catParam);
+      if (catParam) {
+        setSelectedCategory(catParam);
+      } else {
+        setSelectedCategory("All");
+      }
     }
-  }, []);
+  }, [typeof window !== "undefined" ? window.location.search : ""]);
 
   const { dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
