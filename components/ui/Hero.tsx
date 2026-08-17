@@ -66,7 +66,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
-const images = ["/crouser1.jpeg", "/crouser2.jpeg"];
+const images = ["/h1.jpeg", "/h2.jpeg"];
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
