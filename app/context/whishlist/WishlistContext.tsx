@@ -6,6 +6,9 @@ import {
   initialWishlistState,
 } from "./wishlistReducer";
 import { WishlistState, WishlistAction } from "./wishlistTypes";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 interface WishlistContextType {
   wishlistState: WishlistState;
@@ -21,9 +24,25 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     wishlistReducer,
     initialWishlistState
   );
+  const { data: session } = useSession();
+  const router = useRouter();
+
+  const customWishlistDispatch = (action: any) => {
+    if (action.type === "ADD_TO_WISHLIST") {
+      if (!session?.user) {
+        toast.warn("To continue shopping, please register your account.", {
+          position: "top-center",
+          autoClose: 3000,
+        });
+        router.push("/auth/signup");
+        return;
+      }
+    }
+    wishlistDispatch(action);
+  };
 
   return (
-    <WishlistContext.Provider value={{ wishlistState, wishlistDispatch }}>
+    <WishlistContext.Provider value={{ wishlistState, wishlistDispatch: customWishlistDispatch }}>
       {children}
     </WishlistContext.Provider>
   );
