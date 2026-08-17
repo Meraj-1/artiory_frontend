@@ -210,7 +210,7 @@ export default function ProductListPage() {
     }
   }, [typeof window !== "undefined" ? window.location.search : ""]);
 
-  const { dispatch } = useCart();
+  const { cartItems, dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
 
   const handleAddToCart = (p: Product) => {
@@ -540,7 +540,9 @@ export default function ProductListPage() {
                         <img
                           src={p.image}
                           alt={p.name}
-                          className="h-full w-full contain transition-opacity duration-400 group-hover:opacity-0"
+                          className={`h-full w-full contain transition-opacity duration-400 ${
+                            p.images.length > 1 ? "group-hover:opacity-0" : ""
+                          }`}
                         />
                         {p.images[1] && (
                           <img
@@ -569,12 +571,62 @@ export default function ProductListPage() {
                               <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{p.oldPrice}</span>
                             ) : null}
                           </div>
-                          <button
-                            onClick={() => handleAddToCart(p)}
-                            className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors"
-                          >
-                            <ShoppingCart className="w-3 h-3" /> Add
-                          </button>
+                          {(() => {
+                            const cartItem = cartItems.find((item) => item.id === String(p.id));
+                            return cartItem ? (
+                              <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-1 py-0.5 shadow-sm">
+                                <button
+                                  onClick={() => {
+                                    if (cartItem.quantity > 1) {
+                                      dispatch({
+                                        type: "UPDATE_QUANTITY",
+                                        payload: { id: String(p.id), quantity: cartItem.quantity - 1 },
+                                      });
+                                    } else {
+                                      dispatch({ type: "REMOVE_ITEM", payload: String(p.id) });
+                                      toast.info(`${p.name} removed from cart`, { position: "bottom-right", autoClose: 800 });
+                                    }
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={cartItem.quantity}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 1) {
+                                      dispatch({
+                                        type: "UPDATE_QUANTITY",
+                                        payload: { id: String(p.id), quantity: val },
+                                      });
+                                    }
+                                  }}
+                                  className="w-8 text-center font-bold text-[11px] text-[#2e306a] bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <button
+                                  onClick={() => {
+                                    dispatch({
+                                      type: "UPDATE_QUANTITY",
+                                      payload: { id: String(p.id), quantity: cartItem.quantity + 1 },
+                                    });
+                                  }}
+                                  className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-[#00b8a2] hover:bg-gray-100 rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                                >
+                                  +
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleAddToCart(p)}
+                                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors cursor-pointer"
+                              >
+                                <ShoppingCart className="w-3 h-3" /> Add
+                              </button>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>

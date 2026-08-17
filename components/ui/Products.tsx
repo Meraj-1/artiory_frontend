@@ -214,9 +214,11 @@ const Products: React.FC = () => {
                   <img
                     src={product.image || "/product/placeholder.svg"}
                     alt={product.name}
-                    className="h-full w-full contain transition-opacity duration-300 group-hover:opacity-0"
+                    className={`h-full w-full contain transition-opacity duration-300 ${
+                      product.images && product.images.length > 1 ? "group-hover:opacity-0" : ""
+                    }`}
                   />
-                  {product.images[1] && (
+                  {product.images && product.images[1] && (
                     <img
                       src={product.images[1]}
                       alt={product.name}

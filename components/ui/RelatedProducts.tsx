@@ -139,10 +139,10 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
                     </div>
                     {/* Images */}
                     {p.image
-                      ? <img src={p.image} alt={p.name} className="h-full w-full object-contain  transition-opacity duration-300 group-hover:opacity-0" />
+                      ? <img src={p.image} alt={p.name} className={`h-full w-full object-contain transition-opacity duration-300 ${p.images && p.images.length > 1 ? "group-hover:opacity-0" : ""}`} />
                       : <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs">No Image</div>
                     }
-                    {p.images[1] && (
+                    {p.images && p.images[1] && (
                       <img src={p.images[1]} alt={p.name} className="h-full w-full object-contain p-4 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     )}
                   </Link>
