@@ -33,6 +33,9 @@ case "ADD_ITEM": {
     case "REMOVE_ITEM":
       return { items: state.items.filter(item => item.id !== action.payload) };
 
+    case "SET_CART":
+      return { items: action.payload };
+
     case "CLEAR_CART":
       return { items: [] };
 

@@ -12,4 +12,5 @@ export interface WishlistState {
 export type WishlistAction =
    | { type: "ADD_TO_WISHLIST"; payload: WishlistItem }
    | { type: "REMOVE_FROM_WISHLIST"; payload: { id: string } }
+   | { type: "SET_WISHLIST"; payload: WishlistItem[] }
    | { type: "CLEAR_WISHLIST" };

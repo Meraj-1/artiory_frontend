@@ -66,14 +66,23 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 
-const images = ["/h1.jpeg", "/hero2.jpeg"];
+const slides = [
+  {
+    desktop: "/hero1_Desktop.jpeg",
+    tab: "/hero1_Tab.jpeg",
+  },
+  {
+    desktop: "/hero2_Desktop.jpeg",
+    tab: "/hero2_Tab.jpeg",
+  },
+];
 
 const Hero = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % images.length);
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 4000);
 
     return () => clearInterval(interval);
@@ -82,31 +91,44 @@ const Hero = () => {
   return (
     <section className="relative w-full overflow-hidden">
       {/* Carousel */}
-      <div className="relative w-full h-[500px] md:h-[600px] lg:h-[90vh]">
-        {images.map((image, index) => (
+      <div className="relative w-full h-[80vh] md-[90vh] lg:h-[80vh] xl:h-[90vh]">
+        {slides.map((slide, index) => (
           <div
-            key={image}
+            key={index}
             className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              currentSlide === index
-                ? "opacity-100 scale-100"
-                : "opacity-0 scale-105"
+              currentSlide === index ? "opacity-100" : "opacity-0"
             }`}
           >
-            <Image
-              src={image}
-              alt={`Artiory Banner ${index + 1}`}
-              fill
-              priority={index === 0}
-              className="object-cover"
-              sizes="100vw"
-            />
+            {/* Desktop Banner (Large Screens: 1024px and above) */}
+            <div className="hidden lg:block relative w-full h-full">
+              <Image
+                src={slide.desktop}
+                alt={`Artiory Banner ${index + 1}`}
+                fill
+                priority={index === 0}
+                className="object-cover object-center"
+                sizes="100vw"
+              />
+            </div>
+
+            {/* Mobile/Tab Banner (Small/Medium Screens: below 1024px) */}
+            <div className="block lg:hidden relative w-full h-full">
+              <Image
+                src={slide.tab}
+                alt={`Artiory Banner ${index + 1} Mobile/Tab`}
+                fill
+                priority={index === 0}
+                className="object-cover object-center"
+                sizes="100vw"
+              />
+            </div>
           </div>
         ))}
       </div>
 
       {/* Dots */}
       <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-        {images.map((_, index) => (
+        {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentSlide(index)}
