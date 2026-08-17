@@ -15,7 +15,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, dispatch] = useReducer(cartReducer, initialCartState);
   const { data: session } = useSession();
   const router = useRouter();
-  const [isLoaded, setIsLoaded] = React.useState(false);
+  const isLocalChange = React.useRef(false);
 
   const cartItems = cart.items;
 
@@ -38,21 +38,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             }));
             dispatch({ type: "SET_CART", payload: formatted });
           }
-          setIsLoaded(true);
         })
         .catch((err) => {
           console.error("Failed to load cart:", err);
-          setIsLoaded(true);
         });
     } else {
       dispatch({ type: "SET_CART", payload: [] });
-      setIsLoaded(true);
     }
   }, [session]);
 
   // Sync cart changes to database
   React.useEffect(() => {
-    if (isLoaded && session?.user) {
+    if (isLocalChange.current && session?.user) {
+      isLocalChange.current = false;
       const cartItemsForBackend = cart.items.map((item) => ({
         productId: item.id,
         name: item.name,
@@ -67,7 +65,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ cartItems: cartItemsForBackend }),
       }).catch((err) => console.error("Failed to sync cart:", err));
     }
-  }, [cart.items, isLoaded, session]);
+  }, [cart.items, session]);
 
   const customDispatch = (action: any) => {
     if (action.type === "ADD_ITEM") {
@@ -79,6 +77,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         router.push("/auth/signup");
         return;
       }
+    }
+
+    if (["ADD_ITEM", "REMOVE_ITEM", "UPDATE_QUANTITY", "CLEAR_CART"].includes(action.type)) {
+      isLocalChange.current = true;
     }
     dispatch(action);
   };

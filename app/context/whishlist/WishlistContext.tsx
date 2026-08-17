@@ -26,7 +26,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   );
   const { data: session } = useSession();
   const router = useRouter();
-  const [isLoaded, setIsLoaded] = React.useState(false);
+  const isLocalChange = React.useRef(false);
 
   // Fetch initial wishlist from backend when session changes
   React.useEffect(() => {
@@ -43,21 +43,19 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
             }));
             wishlistDispatch({ type: "SET_WISHLIST", payload: formatted });
           }
-          setIsLoaded(true);
         })
         .catch((err) => {
           console.error("Failed to load wishlist:", err);
-          setIsLoaded(true);
         });
     } else {
       wishlistDispatch({ type: "SET_WISHLIST", payload: [] });
-      setIsLoaded(true);
     }
   }, [session]);
 
   // Sync wishlist changes to database
   React.useEffect(() => {
-    if (isLoaded && session?.user) {
+    if (isLocalChange.current && session?.user) {
+      isLocalChange.current = false;
       const wishlistItemsForBackend = wishlistState.items.map((item) => ({
         productId: item.id,
         name: item.name,
@@ -71,7 +69,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ wishlistItems: wishlistItemsForBackend }),
       }).catch((err) => console.error("Failed to sync wishlist:", err));
     }
-  }, [wishlistState.items, isLoaded, session]);
+  }, [wishlistState.items, session]);
 
   const customWishlistDispatch = (action: any) => {
     if (action.type === "ADD_TO_WISHLIST") {
@@ -83,6 +81,10 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         router.push("/auth/signup");
         return;
       }
+    }
+
+    if (["ADD_TO_WISHLIST", "REMOVE_FROM_WISHLIST", "CLEAR_WISHLIST"].includes(action.type)) {
+      isLocalChange.current = true;
     }
     wishlistDispatch(action);
   };
