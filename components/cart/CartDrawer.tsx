@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { CartItem, useCart } from "@/app/context/cart/Cartcontext";
 import { Trash, Plus, Minus } from "lucide-react";
+import { toast } from "react-toastify";
 import Link from "next/link";
 import Image from "next/image";
 import { Londrina_Solid } from "next/font/google";
@@ -83,6 +84,11 @@ export default function CartPage() {
   const handleIncrement = (id: string) => {
     const item = cart.items.find((i) => i.id === id);
     if (!item) return;
+    const maxStock = item.stock ?? 999;
+    if (item.quantity >= maxStock) {
+      toast.warn(`Cannot add more. Only ${maxStock} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+      return;
+    }
     dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: item.quantity + 1 } });
   };
 
@@ -127,28 +133,42 @@ export default function CartPage() {
                 {cart.items.map((item) => (
                   <tr key={item.id} className="border-b">
                     <td className="p-3 flex items-center gap-3">
-                      <Image
-                        src={item.image}
-                        alt={item.name}
-                        width={70}
-                        height={70}
-                        className="rounded h-auto w-22"
-                      />
-                      <span>{item.name}</span>
+                      <Link href={`/product/${item.id}`} className="shrink-0">
+                        <Image
+                          src={item.image}
+                          alt={item.name}
+                          width={70}
+                          height={70}
+                          className="rounded h-auto w-22 hover:scale-105 transition-transform duration-300"
+                        />
+                      </Link>
+                      <div className="flex flex-col">
+                        <Link href={`/product/${item.id}`} className="hover:text-[#00b8a2] transition-colors font-medium">
+                          {item.name}
+                        </Link>
+                        {item.stock !== undefined && item.quantity >= item.stock && (
+                          <span className="text-[10px] text-rose-500 font-semibold mt-1">⚠️ Max limit reached (Only {item.stock} left)</span>
+                        )}
+                        {item.stock !== undefined && item.stock <= 5 && item.quantity < item.stock && (
+                          <span className="text-[10px] text-amber-500 font-semibold mt-1">⚠️ Low Stock: Only {item.stock} left</span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-3">&#x20B9;{item.price}</td>
                     <td className="p-3">
-                      <div className="flex items-center border rounded-md overflow-hidden w-fit">
+                      <div className="flex items-center border rounded-md overflow-hidden w-fit bg-white">
                         <button
-                          className="px-2 py-1 border-r hover:bg-gray-100"
+                          className="px-2 py-1 border-r hover:bg-gray-100 cursor-pointer"
                           onClick={() => handleDecrement(item.id)}
                         >
                           <Minus size={20} />
                         </button>
-                        <span className="px-3">{item.quantity}</span>
+                        <span className="px-3 min-w-[24px] text-center font-semibold">{item.quantity}</span>
                         <button
-                          className="px-2 py-1 border-l hover:bg-gray-100"
+                          disabled={item.stock !== undefined && item.quantity >= item.stock}
+                          className="px-2 py-1 border-l hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer"
                           onClick={() => handleIncrement(item.id)}
+                          title={item.stock !== undefined && item.quantity >= item.stock ? "Stock limit reached" : ""}
                         >
                           <Plus size={20} />
                         </button>
@@ -174,32 +194,44 @@ export default function CartPage() {
             {cart.items.map((item) => (
               <div key={item.id} className="border rounded-lg p-4 flex flex-col gap-3">
                 <div className="flex gap-3 items-center">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={60}
-                    height={60}
-                    className="rounded"
-                  />
+                  <Link href={`/product/${item.id}`} className="shrink-0">
+                    <Image
+                      src={item.image}
+                      alt={item.name}
+                      width={60}
+                      height={60}
+                      className="rounded hover:scale-105 transition-transform duration-300"
+                    />
+                  </Link>
                   <div>
-                    <p className="font-semibold">{item.name}</p>
-                    <p className="text-gray-600 text-sm">
+                    <Link href={`/product/${item.id}`} className="hover:text-[#00b8a2] transition-colors font-semibold block text-sm">
+                      {item.name}
+                    </Link>
+                    {/* <p className="text-gray-600 text-sm">
                       &#x20B9;{item.price} | SKU: BR-00{item.id}
-                    </p>
+                    </p> */}
+                    {item.stock !== undefined && item.quantity >= item.stock && (
+                      <p className="text-[10px] text-rose-500 font-semibold mt-1">⚠️ Max limit reached (Only {item.stock} left)</p>
+                    )}
+                    {item.stock !== undefined && item.stock <= 5 && item.quantity < item.stock && (
+                      <p className="text-[10px] text-amber-500 font-semibold mt-1">⚠️ Low Stock: Only {item.stock} left</p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center border rounded-md overflow-hidden">
+                  <div className="flex items-center border rounded-md overflow-hidden bg-white">
                     <button
-                      className="px-3 py-1 border-r hover:bg-gray-100"
+                      className="px-3 py-1 border-r hover:bg-gray-100 cursor-pointer"
                       onClick={() => handleDecrement(item.id)}
                     >
                       <Minus size={18} />
                     </button>
-                    <span className="px-3">{item.quantity}</span>
+                    <span className="px-3 min-w-[20px] text-center font-semibold">{item.quantity}</span>
                     <button
-                      className="px-3 py-1 border-l hover:bg-gray-100"
+                      disabled={item.stock !== undefined && item.quantity >= item.stock}
+                      className="px-3 py-1 border-l hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed cursor-pointer"
                       onClick={() => handleIncrement(item.id)}
+                      title={item.stock !== undefined && item.quantity >= item.stock ? "Stock limit reached" : ""}
                     >
                       <Plus size={18} />
                     </button>

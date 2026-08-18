@@ -108,6 +108,7 @@ export default function CheckoutPage() {
       setPlacing(true);
 
       const orderItems = cartItems.map((item) => ({
+        productId: item.id,
         name: item.name,
         qty: item.quantity,
         price: item.price,

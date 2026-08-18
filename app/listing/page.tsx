@@ -41,6 +41,8 @@ type Product = {
   shortDescription: string;
   description: string;
   isSale?: boolean;
+  stock?: number;
+  stockQuantity?: number;
 };
 
 
@@ -59,7 +61,7 @@ const categoryGroups: { label: string;  items: string[] }[] = [
 export default function ProductListPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const [sortOption, setSortOption] = useState("Default");
   const [openGroups, setOpenGroups] = useState<string[]>([]);
@@ -203,9 +205,9 @@ export default function ProductListPage() {
       const params = new URLSearchParams(window.location.search);
       const catParam = params.get("category");
       if (catParam) {
-        setSelectedCategory(catParam);
+        setSelectedCategories([catParam]);
       } else {
-        setSelectedCategory("All");
+        setSelectedCategories([]);
       }
     }
   }, [typeof window !== "undefined" ? window.location.search : ""]);
@@ -214,7 +216,7 @@ export default function ProductListPage() {
   const { wishlistDispatch, wishlistState } = useWishlist();
 
   const handleAddToCart = (p: Product) => {
-    dispatch({ type: "ADD_ITEM", payload: { id: String(p.id), name: p.name, price: p.price, image: p.image, quantity: 1 } });
+    dispatch({ type: "ADD_ITEM", payload: { id: String(p.id), name: p.name, price: p.price, image: p.image, quantity: 1, stock: p.stockQuantity ?? p.stock } });
     toast.success(`${p.name} added to cart!`, { position: "bottom-right", autoClose: 800 });
   };
 
@@ -232,7 +234,7 @@ export default function ProductListPage() {
   const toggleGroup = (label: string) =>
     setOpenGroups((prev) => prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]);
 
-  const clearFilters = () => { setSelectedCategory("All"); };
+  const clearFilters = () => { setSelectedCategories([]); };
 
   const normalizeForMatch = (str: string) => {
     if (!str) return "";
@@ -246,21 +248,22 @@ export default function ProductListPage() {
   let filteredProducts = products.filter((p) => {
     // 1. Category Filter
     let catMatch = true;
-    if (selectedCategory !== "All") {
+    if (selectedCategories.length > 0) {
       const pCat = normalizeForMatch(p.category);
       const pSub = normalizeForMatch(p.subCategory || "");
-      const selCat = normalizeForMatch(selectedCategory);
       
-      const directCategoryMatch = pCat === selCat;
-      const directSubCategoryMatch = pSub === selCat;
-      
-      // Find if selCat is a parent category group (like "Art & Craft")
-      const group = categoryGroups.find((g) => normalizeForMatch(g.label) === selCat);
-      const groupMatch = group 
-        ? (pCat === selCat || group.items.some((item) => normalizeForMatch(item) === pSub)) 
-        : false;
-      
-      catMatch = directCategoryMatch || directSubCategoryMatch || groupMatch;
+      catMatch = selectedCategories.some((selCatStr) => {
+        const selCat = normalizeForMatch(selCatStr);
+        const directCategoryMatch = pCat === selCat;
+        const directSubCategoryMatch = pSub === selCat;
+        
+        const group = categoryGroups.find((g) => normalizeForMatch(g.label) === selCat);
+        const groupMatch = group 
+          ? (pCat === selCat || group.items.some((item) => normalizeForMatch(item) === pSub)) 
+          : false;
+          
+        return directCategoryMatch || directSubCategoryMatch || groupMatch;
+      });
     }
 
     return catMatch;
@@ -269,7 +272,7 @@ export default function ProductListPage() {
   if (sortOption === "Price: Low to High") filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
   else if (sortOption === "Price: High to Low") filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
 
-  const activeFilterCount = selectedCategory !== "All" ? 1 : 0;
+  const activeFilterCount = selectedCategories.length;
 
   const SidebarFilters = () => (
     <>
@@ -281,118 +284,94 @@ export default function ProductListPage() {
         <div className="p-3">
           <button
             className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-sm transition-all mb-1 cursor-pointer ${
-              selectedCategory === "All" ? "bg-[#00b8a2] text-white font-medium shadow-sm" : "hover:bg-gray-50 text-gray-600"
+              selectedCategories.length === 0 ? "bg-[#00b8a2] text-white font-medium shadow-sm" : "hover:bg-gray-50 text-gray-600"
             }`}
-            onClick={() => setSelectedCategory("All")}
+            onClick={() => setSelectedCategories([])}
           >
              All Products
           </button>
-          {/* {categoryGroups.map((group) => (
+          {categoryGroups.map((group) => (
             <div key={group.label}>
+              {/* Category Group */}
               <button
+                type="button"
                 className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
                 onClick={() => toggleGroup(group.label)}
               >
-                <span className="flex items-center gap-2">{group.label}</span>
-                <ChevronDown className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${openGroups.includes(group.label) ? "rotate-180" : ""}`} />
+                <span className="flex items-center gap-2">
+                  {group.label}
+                </span>
+
+                <ChevronDown
+                  className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
+                    openGroups.includes(group.label) ? "rotate-180" : ""
+                  }`}
+                />
               </button>
+
+              {/* Categories */}
               {openGroups.includes(group.label) && (
-                <div className="ml-4 mb-1 space-y-0.5 border-l-2 border-[#00b8a2]/20 pl-3">
-                  {group.items.map((cat) => (
-                    <button
-                      key={cat}
-                      className={`block w-full text-left px-2 py-1.5 rounded-lg text-xs transition-all cursor-pointer ${
-                        selectedCategory === cat ? "bg-[#00b8a2]/10 text-[#00b8a2] font-medium" : "text-gray-500 hover:text-[#2e306a] hover:bg-gray-50"
-                      }`}
-                      onClick={() => setSelectedCategory(cat)}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                <div className="ml-4 mb-1 space-y-1 border-l-2 border-[#00b8a2]/20 pl-3">
+                  {group.items.map((cat) => {
+                    const isSelected = selectedCategories.includes(cat);
+
+                    return (
+                      <label
+                        key={cat}
+                        className={`flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-xs group transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-[#00b8a2]/10 text-[#00b8a2] font-medium"
+                            : "text-gray-500 hover:text-[#2e306a] hover:bg-gray-50"
+                        }`}
+                      >
+                        {/* Checkbox */}
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            setSelectedCategories((prev) =>
+                              prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
+                            );
+                          }}
+                          className="peer sr-only"
+                        />
+
+                        {/* Custom Checkbox */}
+                        <span
+                          className={`flex items-center justify-center w-4 h-4 rounded border transition-all duration-200 ${
+                            isSelected
+                              ? "bg-[#00b8a2] border-[#00b8a2]"
+                              : "bg-white border-gray-300 group-hover:border-[#00b8a2]"
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg
+                              className="w-3 h-3 text-white"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="3"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M5 12l4 4L19 7"
+                              />
+                            </svg>
+                          )}
+                        </span>
+
+                        {/* Category Name */}
+                        <span className="flex-1">
+                          {cat}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               )}
             </div>
-          ))} */}
-          {categoryGroups.map((group) => (
-  <div key={group.label}>
-    {/* Category Group */}
-    <button
-      type="button"
-      className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-[#2e306a] hover:bg-gray-50 rounded-xl transition-all cursor-pointer"
-      onClick={() => toggleGroup(group.label)}
-    >
-      <span className="flex items-center gap-2">
-        {group.label}
-      </span>
-
-      <ChevronDown
-        className={`w-3.5 h-3.5 text-gray-400 transition-transform duration-200 ${
-          openGroups.includes(group.label) ? "rotate-180" : ""
-        }`}
-      />
-    </button>
-
-    {/* Categories */}
-    {openGroups.includes(group.label) && (
-      <div className="ml-4 mb-1 space-y-1 border-l-2 border-[#00b8a2]/20 pl-3">
-        {group.items.map((cat) => {
-          const isSelected = selectedCategory === cat;
-
-          return (
-            <label
-              key={cat}
-              className={`flex items-center gap-2.5 w-full px-2 py-2 rounded-lg text-xs transition-all cursor-pointer ${
-                isSelected
-                  ? "bg-[#00b8a2]/10 text-[#00b8a2] font-medium"
-                  : "text-gray-500 hover:text-[#2e306a] hover:bg-gray-50"
-              }`}
-            >
-              {/* Checkbox */}
-              <input
-                type="checkbox"
-                checked={isSelected}
-                onChange={() =>
-                  setSelectedCategory(isSelected ? "" : cat)
-                }
-                className="peer sr-only"
-              />
-
-              {/* Custom Checkbox */}
-              <span
-                className={`flex items-center justify-center w-4 h-4 rounded border transition-all duration-200 ${
-                  isSelected
-                    ? "bg-[#00b8a2] border-[#00b8a2]"
-                    : "bg-white border-gray-300 group-hover:border-[#00b8a2]"
-                }`}
-              >
-                {isSelected && (
-                  <svg
-                    className="w-3 h-3 text-white"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 12l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </span>
-
-              {/* Category Name */}
-              <span className="flex-1">
-                {cat}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    )}
-  </div>
-))}
+          ))}
         </div>
       </div>
 
@@ -451,12 +430,18 @@ export default function ProductListPage() {
                 </button>
 
                 {/* Active filter chips */}
-                {selectedCategory !== "All" && (
-                  <span className="flex items-center gap-1 px-3 py-1 bg-[#00b8a2]/10 text-[#00b8a2] rounded-full text-xs font-medium">
-                    {selectedCategory}
-                    <button onClick={() => setSelectedCategory("All")}><X className="w-3 h-3" /></button>
+                {selectedCategories.map((cat) => (
+                  <span key={cat} className="flex items-center gap-1 px-3 py-1 bg-[#00b8a2]/10 text-[#00b8a2] rounded-full text-xs font-medium">
+                    {cat}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedCategories((prev) => prev.filter((c) => c !== cat))}
+                      className="cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
                   </span>
-                )}
+                ))}
 
                 <span className="text-xs text-gray-400 hidden sm:block">
                   {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
@@ -594,26 +579,43 @@ export default function ProductListPage() {
                                 <input
                                   type="number"
                                   min="1"
+                                  max={p.stockQuantity ?? p.stock ?? 999}
                                   value={cartItem.quantity}
                                   onChange={(e) => {
                                     const val = parseInt(e.target.value);
-                                    if (!isNaN(val) && val >= 1) {
-                                      dispatch({
-                                        type: "UPDATE_QUANTITY",
-                                        payload: { id: String(p.id), quantity: val },
-                                      });
+                                    const maxStock = p.stockQuantity ?? p.stock ?? 999;
+                                    if (!isNaN(val)) {
+                                      if (val > maxStock) {
+                                        toast.warn(`Only ${maxStock} items in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                        dispatch({
+                                          type: "UPDATE_QUANTITY",
+                                          payload: { id: String(p.id), quantity: maxStock },
+                                        });
+                                      } else if (val >= 1) {
+                                        dispatch({
+                                          type: "UPDATE_QUANTITY",
+                                          payload: { id: String(p.id), quantity: val },
+                                        });
+                                      }
                                     }
                                   }}
                                   className="w-8 text-center font-bold text-[11px] text-[#2e306a] bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                 />
                                 <button
                                   onClick={() => {
+                                    const maxStock = p.stockQuantity ?? p.stock ?? 999;
+                                    if (cartItem.quantity >= maxStock) {
+                                      toast.warn(`Only ${maxStock} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                      return;
+                                    }
                                     dispatch({
                                       type: "UPDATE_QUANTITY",
                                       payload: { id: String(p.id), quantity: cartItem.quantity + 1 },
                                     });
                                   }}
-                                  className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-[#00b8a2] hover:bg-gray-100 rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                                  disabled={cartItem.quantity >= (p.stockQuantity ?? p.stock ?? 999)}
+                                  className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-[#00b8a2] hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                                  title={cartItem.quantity >= (p.stockQuantity ?? p.stock ?? 999) ? "Stock limit reached" : ""}
                                 >
                                   +
                                 </button>

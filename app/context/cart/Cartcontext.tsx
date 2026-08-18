@@ -35,6 +35,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
               price: item.price,
               image: item.image,
               quantity: item.quantity,
+              stock: item.stock,
             }));
             dispatch({ type: "SET_CART", payload: formatted });
           }
@@ -57,6 +58,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         price: item.price,
         image: item.image,
         quantity: item.quantity,
+        stock: item.stock,
       }));
 
       fetch("/api/users/cart", {
@@ -76,6 +78,36 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         });
         router.push("/auth/signup");
         return;
+      }
+
+      // Check stock limit for ADD_ITEM
+      const existing = cart.items.find((item) => item.id === action.payload.id);
+      const stockLimit = action.payload.stock ?? existing?.stock ?? Infinity;
+      const currentQty = existing ? existing.quantity : 0;
+      const addedQty = action.payload.quantity ?? 1;
+
+      if (currentQty + addedQty > stockLimit) {
+        toast.warn(`Cannot add more. Only ${stockLimit} items in stock!`, {
+          position: "bottom-right",
+          autoClose: 2000,
+        });
+        const allowedAdd = stockLimit - currentQty;
+        if (allowedAdd <= 0) return; // Block dispatch completely
+        action.payload.quantity = allowedAdd;
+      }
+    }
+
+    if (action.type === "UPDATE_QUANTITY") {
+      const existing = cart.items.find((item) => item.id === action.payload.id);
+      if (existing) {
+        const stockLimit = existing.stock ?? Infinity;
+        if (action.payload.quantity > stockLimit) {
+          toast.warn(`Only ${stockLimit} items in stock!`, {
+            position: "bottom-right",
+            autoClose: 2000,
+          });
+          action.payload.quantity = stockLimit; // Cap at stock limit
+        }
       }
     }
 

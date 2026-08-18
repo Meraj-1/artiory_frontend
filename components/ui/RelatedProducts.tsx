@@ -23,6 +23,8 @@ type Product = {
   category: string;
   shortDescription: string;
   isSale?: boolean;
+  stock?: number;
+  stockQuantity?: number;
 };
 
 interface RelatedProductsProps {
@@ -34,7 +36,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const { dispatch } = useCart();
+  const { cartItems, dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
 
   useEffect(() => {
@@ -60,6 +62,8 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
             category: item.category ?? "",
             shortDescription: item.shortDescription ?? item.shortDesc ?? "",
             isSale: Boolean(item.isSale ?? item.onSale ?? (mrp > 0 && price > 0 && price < mrp)),
+            stock: item.stockQuantity ?? item.stock ?? 999,
+            stockQuantity: item.stockQuantity ?? item.stock ?? 999,
           };
         });
 
@@ -76,7 +80,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
   }, [category, currentProductId]);
 
   const handleAddToCart = (p: Product) => {
-    dispatch({ type: "ADD_ITEM", payload: { id: p.id, name: p.name, price: p.price, image: p.image, quantity: 1 } });
+    dispatch({ type: "ADD_ITEM", payload: { id: p.id, name: p.name, price: p.price, image: p.image, quantity: 1, stock: p.stockQuantity ?? p.stock } });
     toast.success(`${p.name} added to cart!`, { position: "bottom-right", autoClose: 800 });
   };
 
@@ -153,17 +157,86 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
                       <h3 className="text-sm font-semibold text-[#2e306a] leading-snug line-clamp-2 hover:text-[#00b8a2] transition-colors">{p.name}</h3>
                     </Link>
                     {p.shortDescription && <p className="text-xs text-gray-400 line-clamp-1">{p.shortDescription}</p>}
-                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100">
+                    <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-100" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                       <div className="flex items-baseline gap-1.5">
                         <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{p.price}</span>
                         {p.oldPrice && <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{p.oldPrice}</span>}
                       </div>
-                      <button
-                        onClick={() => handleAddToCart(p)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors"
-                      >
-                        <ShoppingCart className="w-3 h-3" /> Add
-                      </button>
+                      {(() => {
+                        const cartItem = cartItems.find((item) => item.id === String(p.id));
+                        return cartItem ? (
+                          <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-1 py-0.5 shadow-sm">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault(); e.stopPropagation();
+                                if (cartItem.quantity > 1) {
+                                  dispatch({
+                                    type: "UPDATE_QUANTITY",
+                                    payload: { id: String(p.id), quantity: cartItem.quantity - 1 },
+                                  });
+                                } else {
+                                  dispatch({ type: "REMOVE_ITEM", payload: String(p.id) });
+                                  toast.info(`${p.name} removed from cart`, { position: "bottom-right", autoClose: 800 });
+                                }
+                              }}
+                              className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                            >
+                              -
+                            </button>
+                            <input
+                              type="number"
+                              min="1"
+                              max={p.stockQuantity ?? p.stock ?? 999}
+                              value={cartItem.quantity}
+                              onChange={(e) => {
+                                const val = parseInt(e.target.value);
+                                const maxStock = p.stockQuantity ?? p.stock ?? 999;
+                                if (!isNaN(val)) {
+                                  if (val > maxStock) {
+                                    toast.warn(`Only ${maxStock} items in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                    dispatch({
+                                      type: "UPDATE_QUANTITY",
+                                      payload: { id: String(p.id), quantity: maxStock },
+                                    });
+                                  } else if (val >= 1) {
+                                    dispatch({
+                                      type: "UPDATE_QUANTITY",
+                                      payload: { id: String(p.id), quantity: val },
+                                    });
+                                  }
+                                }
+                              }}
+                              className="w-8 text-center font-bold text-[11px] text-[#2e306a] bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault(); e.stopPropagation();
+                                const maxStock = p.stockQuantity ?? p.stock ?? 999;
+                                if (cartItem.quantity >= maxStock) {
+                                  toast.warn(`Only ${maxStock} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                  return;
+                                }
+                                dispatch({
+                                  type: "UPDATE_QUANTITY",
+                                  payload: { id: String(p.id), quantity: cartItem.quantity + 1 },
+                                });
+                              }}
+                              disabled={cartItem.quantity >= (p.stockQuantity ?? p.stock ?? 999)}
+                              className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-[#00b8a2] hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                              title={cartItem.quantity >= (p.stockQuantity ?? p.stock ?? 999) ? "Stock limit reached" : ""}
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(p); }}
+                            className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors cursor-pointer"
+                          >
+                            <ShoppingCart className="w-3 h-3" /> Add
+                          </button>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>

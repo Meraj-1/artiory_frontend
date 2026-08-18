@@ -36,7 +36,7 @@ function signJwtHS256(payload: object, secret: string, expiresInMinutes = 5): st
 }
 
 function getBackendToken(userId: string) {
-  return signJwtHS256({ id: userId }, process.env.JWT_SECRET || "fallback_secret", 5);
+  return signJwtHS256({ id: userId }, process.env.JWT_SECRET || "fallback_secret", 1440);
 }
 
 export async function GET() {

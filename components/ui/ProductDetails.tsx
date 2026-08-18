@@ -52,7 +52,7 @@ const RatingStars: React.FC<{ rating?: number }> = ({ rating = 3 }) => (
 );
 
 export default function ProductDetail({ product }: { product: ProductType }) {
-  const { dispatch } = useCart();
+  const { cartItems, dispatch } = useCart();
   const { wishlistDispatch, wishlistState } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -95,7 +95,8 @@ export default function ProductDetail({ product }: { product: ProductType }) {
   const isInWishlist = wishlistState.items.some((item) => item.id === String(product.id));
 
   const handleCart = () => {
-    dispatch({ type: "ADD_ITEM", payload: { id: String(product.id), name: product.name, price: product.price, image: mainImage, quantity } });
+    const stockLimit = product.stockQuantity ?? 999;
+    dispatch({ type: "ADD_ITEM", payload: { id: String(product.id), name: product.name, price: product.price, image: mainImage, quantity, stock: stockLimit } });
     toast.success(`${product.name} added to cart!`);
   };
 
@@ -233,6 +234,30 @@ export default function ProductDetail({ product }: { product: ProductType }) {
             )}
           </div>
 
+          {/* Stock Notification */}
+          {(() => {
+            const stock = product.stockQuantity ?? 0;
+            if (stock === 0) {
+              return (
+                <div className="text-sm font-semibold text-rose-500 bg-rose-50 border border-rose-100 rounded-xl px-3 py-1.5 w-fit">
+                  ❌ Out of Stock
+                </div>
+              );
+            }
+            if (stock <= 5) {
+              return (
+                <div className="text-sm font-semibold text-amber-600 bg-amber-50 border border-amber-100 rounded-xl px-3 py-1.5 w-fit animate-pulse">
+                  ⚠️ Only {stock} items left in stock - order soon!
+                </div>
+              );
+            }
+            return (
+              <div className="text-xs font-semibold text-[#00b8a2] bg-emerald-50/50 border border-emerald-100 rounded-xl px-2.5 py-1 w-fit">
+                ✓ In Stock
+              </div>
+            );
+          })()}
+
           {product.shortDescription && (
             <p className="text-sm sm:text-base xl:text-lg text-gray-500 font-light leading-relaxed">{product.shortDescription}</p>
           )}
@@ -241,14 +266,113 @@ export default function ProductDetail({ product }: { product: ProductType }) {
 
           {/* Quantity + Cart + Wishlist */}
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-            <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden">
-              <button className="px-4 py-2.5 text-lg hover:bg-gray-50 transition" onClick={() => setQuantity((q) => Math.max(1, q - 1))}>−</button>
-              <span className="px-5 py-2.5 text-base font-medium border-x border-gray-300">{quantity}</span>
-              <button className="px-4 py-2.5 text-lg hover:bg-gray-50 transition" onClick={() => setQuantity((q) => q + 1)}>+</button>
-            </div>
-            <button onClick={handleCart} className="flex items-center gap-2 bg-[#1e1e4d] hover:bg-[#2e3a7a] text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors">
-              <ShoppingCart className="w-4 h-4" /> Add to Cart
-            </button>
+            {(() => {
+              const cartItem = cartItems.find((item) => item.id === String(product.id));
+              const stockLimit = product.stockQuantity ?? 999;
+              const isOutOfStock = stockLimit <= 0;
+
+              if (isOutOfStock) {
+                return (
+                  <>
+                    <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden opacity-50 pointer-events-none">
+                      <button className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer" disabled>−</button>
+                      <span className="px-5 py-2.5 text-base font-medium border-x border-gray-300 w-12 text-center">0</span>
+                      <button className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer" disabled>+</button>
+                    </div>
+                    <button disabled className="flex items-center gap-2 bg-gray-400 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium cursor-not-allowed">
+                      Out of Stock
+                    </button>
+                  </>
+                );
+              }
+
+              if (cartItem) {
+                return (
+                  <>
+                    <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white">
+                      <button
+                        className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer"
+                        onClick={() => {
+                          if (cartItem.quantity > 1) {
+                            dispatch({
+                              type: "UPDATE_QUANTITY",
+                              payload: { id: String(product.id), quantity: cartItem.quantity - 1 },
+                            });
+                          } else {
+                            dispatch({ type: "REMOVE_ITEM", payload: String(product.id) });
+                            toast.info(`${product.name} removed from cart`, { position: "bottom-right", autoClose: 800 });
+                          }
+                        }}
+                      >
+                        −
+                      </button>
+                      <span className="px-5 py-2.5 text-base font-semibold border-x border-gray-300 w-12 text-center text-[#2e306a]">
+                        {cartItem.quantity}
+                      </span>
+                      <button
+                        className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                        disabled={cartItem.quantity >= stockLimit}
+                        onClick={() => {
+                          if (cartItem.quantity >= stockLimit) {
+                            toast.warn(`Only ${stockLimit} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+                            return;
+                          }
+                          dispatch({
+                            type: "UPDATE_QUANTITY",
+                            payload: { id: String(product.id), quantity: cartItem.quantity + 1 },
+                          });
+                        }}
+                        title={cartItem.quantity >= stockLimit ? "Stock limit reached" : ""}
+                      >
+                        +
+                      </button>
+                    </div>
+                    <button
+                      disabled
+                      className="flex items-center gap-2 bg-emerald-600 text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium cursor-not-allowed shadow-sm"
+                    >
+                      ✓ Added to Cart
+                    </button>
+                  </>
+                );
+              }
+
+              return (
+                <>
+                  <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden bg-white">
+                    <button
+                      className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    >
+                      −
+                    </button>
+                    <span className="px-5 py-2.5 text-base font-semibold border-x border-gray-300 w-12 text-center text-[#2e306a]">
+                      {quantity}
+                    </span>
+                    <button
+                      className="px-4 py-2.5 text-lg hover:bg-gray-50 transition cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                      disabled={quantity >= stockLimit}
+                      onClick={() => {
+                        if (quantity >= stockLimit) {
+                          toast.warn(`Only ${stockLimit} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+                          return;
+                        }
+                        setQuantity((q) => q + 1);
+                      }}
+                      title={quantity >= stockLimit ? "Stock limit reached" : ""}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    onClick={handleCart}
+                    className="flex items-center gap-2 bg-[#1e1e4d] hover:bg-[#2e3a7a] text-white px-4 sm:px-6 py-2.5 rounded-xl text-sm font-medium transition-colors cursor-pointer shadow-sm hover:shadow"
+                  >
+                    <ShoppingCart className="w-4 h-4" /> Add to Cart
+                  </button>
+                </>
+              );
+            })()}
             <button onClick={handleWishlist} className="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-xl hover:border-[#00b8a2] transition">
               <HeartIcon className="w-5 h-5 stroke-[#8bd2c9] stroke-2" fill={isInWishlist ? "#00c8a2" : "none"} />
             </button>

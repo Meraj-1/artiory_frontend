@@ -22,12 +22,16 @@ type Product = {
   images: string[];
   category: string;
   shortDescription: string;
+  description: string;
   isSale?: boolean;
+  stock?: number;
+  stockQuantity?: number;
 };
 
 const Products: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("All");
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -61,9 +65,21 @@ const Products: React.FC = () => {
             description: item.description || "",
             isSale: mrp > price,
             ageGroup: item.ageGroup || "3+",
+            stock: item.stockQuantity ?? item.stock ?? 999,
+            stockQuantity: item.stockQuantity ?? item.stock ?? 999,
           };
         });
-        setProducts(finalProducts);
+        
+        // Dynamic random shuffle
+        const shuffleArray = (arr: Product[]) => {
+          const shuffled = [...arr];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        };
+        setProducts(shuffleArray(finalProducts));
       } catch (err) {
         console.error("Failed to fetch products:", err);
       } finally {
@@ -75,13 +91,21 @@ const Products: React.FC = () => {
 
   const itemsPerPage = 8;
   const [page, setPage] = useState(1);
-  const totalPages = Math.ceil(products.length / itemsPerPage);
-  const paginatedProducts = products.slice(
+
+  // Filter products by selected category
+  const filteredProducts = selectedCategory === "All"
+    ? products
+    : products.filter((p) => p.category === selectedCategory);
+
+  const categories = ["All", ...Array.from(new Set(products.map((p) => p.category).filter(Boolean)))];
+
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
+  const paginatedProducts = filteredProducts.slice(
     (page - 1) * itemsPerPage,
     page * itemsPerPage
   );
 
-  const { dispatch } = useCart();
+  const { cartItems, dispatch } = useCart();
   const handleAddToCart = (product: Product) => {
     dispatch({
       type: "ADD_ITEM",
@@ -91,6 +115,7 @@ const Products: React.FC = () => {
         price: product.price,
         image: product.image,
         quantity: 1,
+        stock: product.stockQuantity ?? product.stock,
       },
     });
     toast.success(`${product.name} added to cart!`, {
@@ -169,6 +194,27 @@ const Products: React.FC = () => {
           <Link href="/listing">View All</Link>
         </p>
       </div>
+
+      {/* Category Tabs */}
+      <div className="flex flex-wrap justify-center gap-2.5 mb-10 px-4">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            onClick={() => {
+              setSelectedCategory(cat);
+              setPage(1);
+            }}
+            className={`px-5 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider border transition-all duration-300 cursor-pointer ${
+              selectedCategory === cat
+                ? "bg-[#00b8a2] text-white border-[#00b8a2] shadow-md shadow-[#00b8a2]/25"
+                : "bg-gray-50 text-[#2e306a] border-gray-200 hover:border-[#00b8a2] hover:text-[#00b8a2]"
+            }`}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 w-full max-w-7xl mx-auto px-4">
         {paginatedProducts.map((product) => (
           <div key={product.id} className="w-full flex justify-center">
@@ -228,7 +274,7 @@ const Products: React.FC = () => {
                 </div>
 
                 {/* Info */}
-                <div className="flex flex-col gap-1 px-3 pt-2 pb-3">
+                <div className="flex flex-col gap-1 px-3 pt-2 pb-3 flex-1">
                   {product.category && (
                     <span className="text-[10px] text-[#00b8a2] font-medium uppercase tracking-wide">{product.category}</span>
                   )}
@@ -236,11 +282,88 @@ const Products: React.FC = () => {
                   {product.shortDescription && (
                     <p className="text-xs text-gray-400 line-clamp-1">{product.shortDescription}</p>
                   )}
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{product.price}</span>
-                    {product.oldPrice && product.oldPrice > product.price && (
-                      <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{product.oldPrice}</span>
-                    )}
+                  <div className="flex items-center justify-between mt-auto pt-2 border-t border-gray-50" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                    <div className="flex items-baseline gap-1.5">
+                      <span className={`${londrina.className} text-lg font-semibold text-[#00b8a2]`}>₹{product.price}</span>
+                      {product.oldPrice && product.oldPrice > product.price && (
+                        <span className={`${londrina.className} text-sm text-gray-400 line-through`}>₹{product.oldPrice}</span>
+                      )}
+                    </div>
+                    {(() => {
+                      const cartItem = cartItems.find((item) => item.id === String(product.id));
+                      return cartItem ? (
+                        <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-xl px-1 py-0.5 shadow-sm">
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault(); e.stopPropagation();
+                              if (cartItem.quantity > 1) {
+                                dispatch({
+                                  type: "UPDATE_QUANTITY",
+                                  payload: { id: String(product.id), quantity: cartItem.quantity - 1 },
+                                });
+                              } else {
+                                dispatch({ type: "REMOVE_ITEM", payload: String(product.id) });
+                                toast.info(`${product.name} removed from cart`, { position: "bottom-right", autoClose: 800 });
+                              }
+                            }}
+                            className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-red-500 hover:bg-gray-100 rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                          >
+                            -
+                          </button>
+                          <input
+                            type="number"
+                            min="1"
+                            max={product.stockQuantity ?? product.stock ?? 999}
+                            value={cartItem.quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              const maxStock = product.stockQuantity ?? product.stock ?? 999;
+                              if (!isNaN(val)) {
+                                if (val > maxStock) {
+                                  toast.warn(`Only ${maxStock} items in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                  dispatch({
+                                    type: "UPDATE_QUANTITY",
+                                    payload: { id: String(product.id), quantity: maxStock },
+                                  });
+                                } else if (val >= 1) {
+                                  dispatch({
+                                    type: "UPDATE_QUANTITY",
+                                    payload: { id: String(product.id), quantity: val },
+                                  });
+                                }
+                              }
+                            }}
+                            className="w-8 text-center font-bold text-[11px] text-[#2e306a] bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault(); e.stopPropagation();
+                              const maxStock = product.stockQuantity ?? product.stock ?? 999;
+                              if (cartItem.quantity >= maxStock) {
+                                toast.warn(`Only ${maxStock} items available in stock!`, { position: "bottom-right", autoClose: 2000 });
+                                return;
+                              }
+                              dispatch({
+                                type: "UPDATE_QUANTITY",
+                                payload: { id: String(product.id), quantity: cartItem.quantity + 1 },
+                              });
+                            }}
+                            disabled={cartItem.quantity >= (product.stockQuantity ?? product.stock ?? 999)}
+                            className="w-5 h-5 flex items-center justify-center text-gray-500 hover:text-[#00b8a2] hover:bg-gray-100 disabled:opacity-30 disabled:hover:bg-transparent disabled:cursor-not-allowed rounded-md text-sm font-semibold transition-colors cursor-pointer"
+                            title={cartItem.quantity >= (product.stockQuantity ?? product.stock ?? 999) ? "Stock limit reached" : ""}
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product); }}
+                          className="flex items-center gap-1 px-2.5 py-1.5 bg-[#00b8a2] text-white rounded-xl text-xs font-medium hover:bg-[#009e8c] transition-colors cursor-pointer"
+                        >
+                          <ShoppingCart className="w-3 h-3" /> Add
+                        </button>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
