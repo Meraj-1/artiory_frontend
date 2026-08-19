@@ -52,8 +52,8 @@ const categoryGroups: { label: string;  items: string[] }[] = [
   { label: "Stationery", items: ["Pencil Box", "Compass Box", "Slate", "Stationery Combo Set", "Mechanical Sharpener", "Pencil Case", "Diary"] },
   { label: "Bags", items: ["Tiffin Bags", "Cross Bags", "Folder Bags", "Fancy Bags", "Vanity Case"] },
   { label: "Pouches",  items: ["Soft Pouch", "Silicone Pouch"] },
-  { label: "Drinkware",  items: ["Sippers", "500 ml Sipper", "900 ml Plastic Bottle Sipper", "Tumbler"] },
-  { label: "Gifts & Fun",  items: ["Metal Money Box", "Gift Hamper", "Mini Fan"] },
+  { label: "Drinkware/Lunchware",  items: ["Sippers", "500 ml Sipper", "900 ml Plastic Bottle Sipper", "Tumbler", "600ml Sippers", "Lunch Boxes"] },
+  { label: "Gifts & Fun",  items: ["Metal Money Box", "Gift Hamper", "Mini Fan", "Tissue Paper Box"] },
 ];
 
 
@@ -514,12 +514,12 @@ export default function ProductListPage() {
                           >
                             <Heart className={`w-4 h-4 ${isWishlisted ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-400"}`} />
                           </button>
-                          <button
+                          {/* <button
                             className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center hover:scale-110 transition-transform"
                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(p); }}
                           >
                             <ShoppingCart className="w-4 h-4 text-[#00b8a2]" />
-                          </button>
+                          </button> */}
                         </div>
 
                         <img

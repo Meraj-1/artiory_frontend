@@ -134,20 +134,20 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ category, currentProd
                       >
                         <Heart className={`w-4 h-4 ${isWishlisted ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-400"}`} />
                       </button>
-                      <button
+                      {/* <button
                         className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center hover:scale-110 transition-transform"
                         onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(p); }}
                       >
                         <ShoppingCart className="w-4 h-4 text-[#00b8a2]" />
-                      </button>
+                      </button> */}
                     </div>
                     {/* Images */}
                     {p.image
-                      ? <img src={p.image} alt={p.name} className={`h-full w-full object-contain transition-opacity duration-300 ${p.images && p.images.length > 1 ? "group-hover:opacity-0" : ""}`} />
+                      ? <img src={p.image} alt={p.name} className={`h-full w-full contain transition-opacity duration-300 ${p.images && p.images.length > 1 ? "group-hover:opacity-0" : ""}`} />
                       : <div className="h-full w-full flex items-center justify-center text-gray-300 text-xs">No Image</div>
                     }
                     {p.images && p.images[1] && (
-                      <img src={p.images[1]} alt={p.name} className="h-full w-full object-contain p-4 absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <img src={p.images[1]} alt={p.name} className="h-full w-full contain  absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     )}
                   </Link>
 

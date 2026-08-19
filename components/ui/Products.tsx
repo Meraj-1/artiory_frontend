@@ -247,12 +247,12 @@ const Products: React.FC = () => {
                       fill={wishlistState.items.some((item) => item.id === product.id) ? "#00c8a2" : "none"}
                     />
                   </button>
-                  <button
+                  {/* <button
                     onClick={(e) => { e.preventDefault(); handleAddToCart(product); }}
                     className="w-8 h-8 bg-white rounded-full shadow flex items-center justify-center"
                   >
                     <ShoppingCart className="w-4 h-4 text-[#00b8a2]" />
-                  </button>
+                  </button> */}
                 </div>
 
                 {/* Image */}

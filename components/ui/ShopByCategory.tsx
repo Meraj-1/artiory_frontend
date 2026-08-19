@@ -15,7 +15,7 @@ const categories = [
   { img: "/category/Stationery.jpeg", title: "Stationery" },
   { img: "/category/Bags.jpg.jpeg", title: "Bags" },
   { img: "/category/Pouches.jpeg", title: "Pouches" },
-  { img: "/category/Drinkware.jpeg", title: "Drinkware" },
+  { img: "/category/Drinkware.jpeg", title: "Drinkware/Lunchware" },
   { img: "/category/Gifts&Fun.jpeg", title: "Gifts & Fun" },
 ];
 
