@@ -105,6 +105,36 @@ const Products: React.FC = () => {
     page * itemsPerPage
   );
 
+  const getPaginationRange = () => {
+    const range: (number | string)[] = [];
+    const maxVisible = 5;
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        range.push(i);
+      }
+      return range;
+    }
+    range.push(1);
+    let start = Math.max(2, page - 1);
+    let end = Math.min(totalPages - 1, page + 1);
+    if (page <= 3) {
+      end = 4;
+    } else if (page >= totalPages - 2) {
+      start = totalPages - 3;
+    }
+    if (start > 2) {
+      range.push("...");
+    }
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    if (end < totalPages - 1) {
+      range.push("...");
+    }
+    range.push(totalPages);
+    return range;
+  };
+
   const { cartItems, dispatch } = useCart();
   const handleAddToCart = (product: Product) => {
     dispatch({
@@ -374,21 +404,39 @@ const Products: React.FC = () => {
 
       {/* Pagination */}
       <div className="flex justify-center items-center gap-3 mt-10">
-        {[...Array(totalPages)].map((_, index) => (
+        {page > 1 && (
           <button
-            key={index}
-            onClick={() => setPage(index + 1)}
-            className={`px-3 py-1 cursor-pointer font-extrabold rounded-lg text-[#00b8a2] ${
-              page === index + 1 ? "text-white bg-[#00b8a2]" : "text-[#00b8a2]"
-            }`}
+            onClick={() => setPage(page - 1)}
+            className="text-[#00b8a2] font-semibold hover:underline cursor-pointer"
           >
-            {index + 1}
+            Prev
           </button>
-        ))}
+        )}
+        {getPaginationRange().map((item, index) => {
+          if (item === "...") {
+            return (
+              <span key={`dots-${index}`} className="text-gray-400 font-bold px-1 select-none">
+                ...
+              </span>
+            );
+          }
+          const pageNum = Number(item);
+          return (
+            <button
+              key={`page-${pageNum}`}
+              onClick={() => setPage(pageNum)}
+              className={`px-3 py-1 cursor-pointer font-extrabold rounded-lg ${
+                page === pageNum ? "text-white bg-[#00b8a2]" : "text-[#00b8a2]"
+              }`}
+            >
+              {pageNum}
+            </button>
+          );
+        })}
         {page < totalPages && (
           <button
             onClick={() => setPage(page + 1)}
-            className="text-[#00b8a2] font-semibold hover:underline"
+            className="text-[#00b8a2] font-semibold hover:underline cursor-pointer"
           >
             Next
           </button>

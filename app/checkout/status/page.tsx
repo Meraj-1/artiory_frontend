@@ -3,6 +3,7 @@ import React, { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Londrina_Solid } from "next/font/google";
+import { useCart } from "@/app/context/cart/Cartcontext";
 
 const londrina = Londrina_Solid({
   weight: ["100", "300", "400", "900"],
@@ -11,6 +12,7 @@ const londrina = Londrina_Solid({
 });
 
 function StatusContent() {
+  const { dispatch } = useCart();
   const searchParams = useSearchParams();
   const status = searchParams.get("status") || "pending";
   const orderId = searchParams.get("orderId") || "N/A";
@@ -19,6 +21,12 @@ function StatusContent() {
 
   const isSuccess = status === "paid" || status === "success";
   const isFailed = status === "failed" || status === "error";
+
+  React.useEffect(() => {
+    if (isSuccess) {
+      dispatch({ type: "CLEAR_CART" });
+    }
+  }, [isSuccess, dispatch]);
 
   return (
     <div className="max-w-md w-full border border-gray-200 rounded-3xl p-8 shadow-xl text-center bg-white space-y-6">

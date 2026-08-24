@@ -37,6 +37,57 @@ export default function CheckoutPage() {
     paymentMethod: "sabpaisa",
   });
 
+  const [pincodeChecking, setPincodeChecking] = useState(false);
+  const [pincodeStatus, setPincodeStatus] = useState<"serviceable" | "unserviceable" | "">("");
+  const [pincodeMessage, setPincodeMessage] = useState("");
+  const [shipping, setShipping] = useState<number>(0);
+
+  const checkPincode = async (zipCode: string) => {
+    if (!zipCode || zipCode.trim().length !== 6) {
+      setPincodeStatus("");
+      setPincodeMessage("");
+      setShipping(0);
+      return;
+    }
+
+    try {
+      setPincodeChecking(true);
+      setPincodeStatus("");
+      setPincodeMessage("");
+
+      const orderItems = cartItems.map((item) => ({
+        productId: item.id,
+        qty: item.quantity,
+      }));
+
+      const chargeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com"}/api/logistics/shipping-charge`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ pincode: zipCode, totalPrice: getCartTotal(), orderItems }),
+      });
+      const chargeJson = await chargeRes.json();
+      if (chargeRes.ok && chargeJson.success) {
+        setShipping(chargeJson.shippingCharge);
+        setPincodeStatus("serviceable");
+        setPincodeMessage(`✅ Delivery is available to your area. Shipping: ₹${chargeJson.shippingCharge}`);
+      } else {
+        setShipping(0);
+        setPincodeStatus("unserviceable");
+        setPincodeMessage(`❌ ${chargeJson.message || "Sorry, delivery is not available for this pincode."}`);
+      }
+    } catch (err) {
+      console.error("Pincode rate check error:", err);
+      setShipping(0);
+      setPincodeStatus("unserviceable");
+      setPincodeMessage("❌ Sorry, delivery is not available for this pincode.");
+    } finally {
+      setPincodeChecking(false);
+    }
+  };
+
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [applying, setApplying] = useState(false);
@@ -44,7 +95,6 @@ export default function CheckoutPage() {
   const [couponStatus, setCouponStatus] = useState<"success" | "error" | "">("");
 
   const subtotal = getCartTotal();
-  const shipping = 40;
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
   const total = Math.max(0, subtotal + shipping - discountAmount);
 
@@ -94,6 +144,11 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
 
   const handlePlaceOrder = async () => {
+    if (pincodeStatus === "unserviceable") {
+      alert("Cannot place order. Selected delivery address pincode is not serviceable by our shipping partner.");
+      return;
+    }
+
     if (!form.lastName || !form.address || !form.city || !form.state || !form.email || !form.phone) {
       alert("Please fill in all required fields marked with *");
       return;
@@ -137,6 +192,11 @@ export default function CheckoutPage() {
         const paymentJson = await paymentRes.json();
         if (!paymentRes.ok) {
           throw new Error(paymentJson.message || "Failed to initialize payment gateway");
+        }
+
+        if (paymentJson.checkoutUrl) {
+          window.location.href = paymentJson.checkoutUrl;
+          return;
         }
 
         const { encData, clientCode, sabpaisaUrl } = paymentJson;
@@ -216,13 +276,18 @@ export default function CheckoutPage() {
         zip: selected.postalCode || "",
         phone: selected.phone || prev.phone || "",
       }));
+      checkPincode(selected.postalCode || "");
     }
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    if (name === "zip") {
+      checkPincode(value);
+    }
   };
 
   return (
@@ -306,20 +371,30 @@ export default function CheckoutPage() {
               />
             </div>
             <div className="grid grid-cols-2 gap-4 mt-4">
-              <input
-                name="zip"
-                value={form.zip}
-                onChange={handleChange}
-                placeholder="ZIP Code"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
-              <input
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="Phone"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
+              <div>
+                <input
+                  name="zip"
+                  value={form.zip}
+                  onChange={handleChange}
+                  placeholder="ZIP Code *"
+                  className="border border-gray-300 rounded-lg p-3 w-full"
+                />
+                {pincodeChecking && <p className="text-[10px] text-gray-500 mt-1">Verifying serviceability...</p>}
+                {pincodeMessage && (
+                  <p className={`text-[10px] ${pincodeStatus === "serviceable" ? "text-emerald-600" : "text-rose-500"} font-medium mt-1`}>
+                    {pincodeMessage}
+                  </p>
+                )}
+              </div>
+              <div>
+                <input
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="Phone *"
+                  className="border border-gray-300 rounded-lg p-3 w-full"
+                />
+              </div>
             </div>
             <input
               name="email"
@@ -483,7 +558,7 @@ export default function CheckoutPage() {
             )}
             <div className="flex justify-between">
               <span>Shipping</span>
-              <span>&#8377;{shipping.toFixed(2)}</span>
+              <span>{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2">
               <span>Total</span>

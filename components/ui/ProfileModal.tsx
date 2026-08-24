@@ -32,6 +32,7 @@ type Props = { onClose: () => void };
 interface Address {
   _id?: string;
   type: string;
+  home: string;
   street: string;
   city: string;
   state: string;
@@ -56,6 +57,7 @@ export default function ProfileModal({ onClose }: Props) {
 
   const [address, setAddress] = useState<Address>({
     type: "Home",
+    home: "",
     street: "",
     city: "",
     state: "",
@@ -75,7 +77,8 @@ export default function ProfileModal({ onClose }: Props) {
         const list = Array.isArray(json.data) ? json.data : [];
         const mapped = list.map((addr: any) => ({
           _id: addr._id,
-          type: addr.home || "Home",
+          type: addr.type || "Home",
+          home: addr.home || "",
           street: addr.street || "",
           city: addr.city || "",
           state: addr.state || "",
@@ -92,9 +95,37 @@ export default function ProfileModal({ onClose }: Props) {
     }
   };
 
+  const [orders, setOrders] = useState<any[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+
+  const fetchOrders = async () => {
+    setOrdersLoading(true);
+    try {
+      const res = await fetch("/api/orders");
+      if (res.ok) {
+        const json = await res.json();
+        if (Array.isArray(json)) {
+          setOrders(json);
+        } else if (json && Array.isArray(json.data)) {
+          setOrders(json.data);
+        } else {
+          setOrders([]);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to fetch customer orders:", err);
+    } finally {
+      setOrdersLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (session?.user && activeSection === "address") {
-      fetchAddresses();
+    if (session?.user) {
+      if (activeSection === "address") {
+        fetchAddresses();
+      } else if (activeSection === "orders") {
+        fetchOrders();
+      }
     }
   }, [session, activeSection]);
 
@@ -181,9 +212,11 @@ export default function ProfileModal({ onClose }: Props) {
 
   const handleAddAddress = async () => {
     if (
+      !address.home ||
       !address.street ||
       !address.city ||
       !address.state ||
+      !address.postalCode ||
       !address.country ||
       !address.phone
     ) {
@@ -199,7 +232,8 @@ export default function ProfileModal({ onClose }: Props) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          home: address.type,
+          type: address.type,
+          home: address.home,
           street: address.street,
           city: address.city,
           state: address.state,
@@ -213,6 +247,7 @@ export default function ProfileModal({ onClose }: Props) {
         toast.success("Address added successfully!", { autoClose: 700 });
         setAddress({
           type: "Home",
+          home: "",
           street: "",
           city: "",
           state: "",
@@ -481,7 +516,7 @@ export default function ProfileModal({ onClose }: Props) {
                 {addresses.map((addr, index) => (
                   <li key={addr._id || index} className="p-3 border rounded-md text-sm text-gray-700 bg-gray-50 flex justify-between items-center">
                     <div>
-                      <strong className="text-[#1e1e4d]">{addr.type}:</strong> {addr.street}, {addr.city}, {addr.state} - {addr.postalCode}, {addr.country} ({addr.phone})
+                      <strong className="text-[#1e1e4d]">{addr.type}:</strong> {addr.home}, {addr.street}, {addr.city}, {addr.state} - {addr.postalCode}, {addr.country} ({addr.phone})
                     </div>
                     {addr._id && (
                       <button
@@ -505,12 +540,17 @@ export default function ProfileModal({ onClose }: Props) {
                 <option className="bg-[#1e1e4d] text-white">Work</option>
                 <option className="bg-[#1e1e4d] text-white">Other</option>
               </select>
-              {["street", "city", "state", "postalCode", "country", "phone"].map((field) => (
+              {["home", "street", "city", "state", "postalCode", "country", "phone"].map((field) => (
                 <input
                   key={field}
                   type="text"
                   name={field}
-                  placeholder={field === "postalCode" ? "Postal Code / Zip" : field.charAt(0).toUpperCase() + field.slice(1)}
+                  placeholder={
+                    field === "home" ? "Flat / House No / Building Name *" :
+                    field === "street" ? "Street Address / Colony *" :
+                    field === "postalCode" ? "Postal Code / Zip *" :
+                    field.charAt(0).toUpperCase() + field.slice(1) + " *"
+                  }
                   value={address[field as keyof Address] || ""}
                   onChange={(e) => setAddress({ ...address, [field]: e.target.value })}
                   className="w-full border text-black border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-gray-300"
@@ -518,7 +558,7 @@ export default function ProfileModal({ onClose }: Props) {
               ))}
               <div className="flex gap-3 pt-2">
                 <button onClick={handleAddAddress} className="w-1/2 bg-[#1e1e4d] hover:bg-[#3b3b7a] transition cursor-pointer text-white py-2 rounded-md font-medium">Add Address</button>
-                <button onClick={() => setAddress({ type: "Home", street: "", city: "", state: "", postalCode: "", country: "", phone: "" })} className="w-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 transition cursor-pointer py-2 rounded-md font-medium">Cancel</button>
+                <button onClick={() => setAddress({ type: "Home", home: "", street: "", city: "", state: "", postalCode: "", country: "", phone: "" })} className="w-1/2 bg-gray-200 hover:bg-gray-300 text-gray-700 transition cursor-pointer py-2 rounded-md font-medium">Cancel</button>
               </div>
             </div>
             <ToastContainer />
@@ -527,31 +567,79 @@ export default function ProfileModal({ onClose }: Props) {
 
       case "orders":
         return (
-        <div className="h-full bg-gradient-to-br from-[#f6f7ff] to-[#eaeaff] p-6 shadow-sm">
-  <h2 className="text-2xl font-bold text-[#1e1e4d] mb-6 flex items-center gap-2">
-    My Orders
-  </h2>
+          <div className="h-full bg-gradient-to-br from-[#f6f7ff] to-[#eaeaff] p-6 shadow-sm overflow-y-auto max-h-[80vh]">
+            <h2 className="text-2xl font-bold text-[#1e1e4d] mb-6 flex items-center gap-2">
+              <BaggageClaim size={24} /> My Orders
+            </h2>
 
-  {/* Empty Orders */}
-  <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-    <BaggageClaim size={50} className="text-[#1e1e4d]" />
+            {ordersLoading ? (
+              <div className="flex justify-center items-center py-20 text-[#1e1e4d]">
+                <Loader2 className="animate-spin mr-2" size={24} />
+                Loading orders...
+              </div>
+            ) : orders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <BaggageClaim size={50} className="text-[#1e1e4d]" />
+                <p className="text-xl font-semibold text-[#1e1e4d] mt-4 mb-2">
+                  You have no orders yet
+                </p>
+                <p className="text-gray-600 mb-5">
+                  Start shopping and your orders will appear here.
+                </p>
+                <Link href="/listing">
+                  <button onClick={onClose} className="px-6 py-2 cursor-pointer transition-all duration-300 bg-[#1e1e4d] text-white rounded-xl shadow-md hover:bg-[#5b5ba1] hover:scale-105">
+                    Browse Products
+                  </button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {orders.map((order: any) => (
+                  <div key={order._id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 text-gray-700">
+                    <div className="flex justify-between items-start border-b border-gray-100 pb-3 mb-4">
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Order ID</p>
+                        <p className="text-sm font-mono font-bold text-[#1e1e4d]">{order._id}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-gray-500 font-semibold">Status</p>
+                        <span className={`inline-block px-2.5 py-1 text-xs font-bold rounded-full ${
+                          order.status === "Paid" ? "bg-emerald-100 text-emerald-800" :
+                          order.status === "Delivered" ? "bg-blue-100 text-blue-800" :
+                          order.status === "Shipped" ? "bg-purple-100 text-purple-800" :
+                          "bg-amber-100 text-amber-800"
+                        }`}>
+                          {order.status}
+                        </span>
+                      </div>
+                    </div>
 
-    <p className="text-xl font-semibold text-[#1e1e4d] mb-2">
-      You have no orders yet
-    </p>
+                    <div className="space-y-3">
+                      {order.orderItems.map((item: any, idx: number) => (
+                        <div key={idx} className="flex justify-between text-sm">
+                          <span className="font-medium">{item.name} <span className="text-xs text-gray-500">x{item.qty}</span></span>
+                          <span className="font-semibold text-[#1e1e4d]">₹{item.price * item.qty}</span>
+                        </div>
+                      ))}
+                    </div>
 
-    <p className="text-gray-600 mb-5">
-      Start shopping and your orders will appear here.
-    </p>
-
-    <Link href="/listing">
-      <button className="px-6 py-2 cursor-pointer transition-all duration-300 bg-[#1e1e4d] text-white rounded-xl shadow-md hover:bg-[#5b5ba1] hover:scale-105">
-        Browse Products
-      </button>
-    </Link>
-  </div>
-</div>
-
+                    <div className="flex justify-between items-center border-t border-gray-100 pt-3 mt-4 text-sm">
+                      <div>
+                        {order.awbNumber && (
+                          <p className="text-xs text-gray-500">
+                            Tracking ID: <span className="font-mono text-gray-700 font-bold">{order.awbNumber}</span> ({order.courierName})
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-base font-bold text-[#1e1e4d]">
+                        Total: ₹{order.totalPrice}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         );
 
       case "settings":

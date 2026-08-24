@@ -72,3 +72,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user || !(session.user as { id?: string }).id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const userId = (session.user as { id: string }).id;
+    const token = getBackendToken(userId);
+
+    const res = await fetch(`${API_BASE_URL}/api/orders/myorders`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const contentType = res.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await res.text();
+      console.error(`Orders Proxy GET: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 1000));
+      return NextResponse.json({ error: "Backend returned invalid format" }, { status: res.status });
+    }
+    const data = await res.json();
+    return NextResponse.json(data, { status: res.status });
+  } catch (error) {
+    console.error("Orders proxy GET error:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
