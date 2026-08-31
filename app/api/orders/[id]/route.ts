@@ -39,41 +39,28 @@ function getBackendToken(userId: string) {
   return signJwtHS256({ id: userId }, process.env.JWT_SECRET || "fallback_secret", 1440);
 }
 
-export async function POST(req: NextRequest) {
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await context.params;
     const session = await getServerSession(authOptions);
-    const userId = (session?.user as any)?.id || (session?.user as any)?._id || (session?.user as any)?.userId;
-    if (!session?.user || !userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+    const userId = (session?.user as any)?.id || "guest";
     const token = getBackendToken(userId);
-    const body = await req.json();
 
-    const payload = {
-      ...body,
-      returnUrl: body.returnUrl || req.nextUrl.origin || "http://localhost:3000"
-    };
-
-    const res = await fetch(`${API_BASE_URL}/api/payment/sabpaisa/initiate`, {
-      method: "POST",
+    const res = await fetch(`${API_BASE_URL}/api/orders/${id}`, {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(payload),
     });
 
-    const contentType = res.headers.get("content-type") || "";
-    if (!contentType.includes("application/json")) {
-      const text = await res.text();
-      console.error(`SabPaisa Proxy: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 1000));
-      return NextResponse.json({ error: "Backend returned invalid format" }, { status: res.status });
+    if (!res.ok) {
+      return NextResponse.json({ error: "Order not found" }, { status: res.status });
     }
+
     const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
-  } catch (error) {
-    console.error("Sabpaisa initiate proxy POST error:", error);
+    return NextResponse.json(data, { status: 200 });
+  } catch (error: any) {
+    console.error("Order details proxy GET error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

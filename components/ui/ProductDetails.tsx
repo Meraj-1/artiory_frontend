@@ -14,7 +14,7 @@ import {
   ZoomIn,
 } from "lucide-react";
 import { toast } from "react-toastify";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Londrina_Solid } from "next/font/google";
 import RelatedProducts from "./RelatedProducts";
 
@@ -64,6 +64,12 @@ export default function ProductDetail({ product }: { product: ProductType }) {
   const [zoomOpen, setZoomOpen] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
   const imageRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+  }, [product?.id]);
 
   const displayImages =
     product.images && product.images.length > 0
@@ -395,18 +401,16 @@ export default function ProductDetail({ product }: { product: ProductType }) {
               {product.stockQuantity !== undefined && (
                 <p><span className="font-medium text-[#1e1e4d]">Stock:</span>{" "}
                   {product.stockQuantity > 0
-                    ? <span className="text-green-600">{product.stockQuantity} left</span>
-                    : <span className="text-red-500">Out of Stock</span>}
+                    ? <span className="text-green-600 font-normal">{product.stockQuantity} left</span>
+                    : <span className="text-red-500 font-normal">Out of Stock</span>}
                 </p>
               )}
-              {/* {product.weight && <p><span className="font-medium text-[#1e1e4d]">Weight:</span> {product.weight}g</p>}
-              {product.gst && <p><span className="font-medium text-[#1e1e4d]">GST:</span> {product.gst}%</p>}
-              {product.dimensions && (product.dimensions.length || product.dimensions.width || product.dimensions.height) && (
-                <p className="col-span-2">
-                  <span className="font-medium text-[#1e1e4d]">Dimensions:</span>{" "}
-                  {product.dimensions.length ?? 0} × {product.dimensions.width ?? 0} × {product.dimensions.height ?? 0} cm
+              {product.weight !== undefined && product.weight > 0 && (
+                <p>
+                  <span className="font-medium text-[#1e1e4d]">Weight:</span>{" "}
+                  <span className="font-normal text-gray-700">{product.weight} gm</span>
                 </p>
-              )} */}
+              )}
             </div>
           </div>
         </div>

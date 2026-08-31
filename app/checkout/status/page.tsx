@@ -14,31 +14,65 @@ const londrina = Londrina_Solid({
 function StatusContent() {
   const { dispatch } = useCart();
   const searchParams = useSearchParams();
-  const status = searchParams.get("status") || "pending";
+  const initialStatus = searchParams.get("status") || "pending";
   const orderId = searchParams.get("orderId") || "N/A";
-  const txnId = searchParams.get("txnId") || "N/A";
+  const initialTxnId = searchParams.get("txnId") || "N/A";
   const amount = searchParams.get("amount") || "N/A";
 
-  const isSuccess = status === "paid" || status === "success";
-  const isFailed = status === "failed" || status === "error";
+  const [currentStatus, setCurrentStatus] = React.useState(initialStatus);
+  const [currentTxnId, setCurrentTxnId] = React.useState(initialTxnId);
+  const [isVerifying, setIsVerifying] = React.useState(false);
+  const [countdown, setCountdown] = React.useState(4);
+
+  const isSuccess = currentStatus === "paid" || currentStatus === "success";
+  const isFailed = currentStatus === "failed" || currentStatus === "error";
+
+  const checkLiveStatus = React.useCallback(async () => {
+    if (!orderId || orderId === "N/A") return;
+    try {
+      setIsVerifying(true);
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com";
+      const res = await fetch(`${apiBase}/api/payment/sabpaisa/enquiry`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderId, merchantTxnId: orderId }),
+      });
+      const data = await res.json();
+      if (data.success && (data.isPaid || data.status === "SUCCESS" || data.status === "TXN_SUCCESS")) {
+        setCurrentStatus("paid");
+        if (data.data?.transaction_id) setCurrentTxnId(data.data.transaction_id);
+        dispatch({ type: "CLEAR_CART" });
+      }
+    } catch (e) {
+      console.error("Live status check error:", e);
+    } finally {
+      setIsVerifying(false);
+    }
+  }, [orderId, dispatch]);
 
   React.useEffect(() => {
     if (isSuccess) {
       dispatch({ type: "CLEAR_CART" });
+      window.location.href = `/profile?tab=orders&highlight=${orderId}`;
+    } else if (orderId !== "N/A") {
+      checkLiveStatus();
     }
-  }, [isSuccess, dispatch]);
+  }, [isSuccess, orderId, checkLiveStatus, dispatch]);
 
   return (
     <div className="max-w-md w-full border border-gray-200 rounded-3xl p-8 shadow-xl text-center bg-white space-y-6">
       {isSuccess && (
         <>
-          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-500 text-4xl">
+          <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-500 text-4xl animate-bounce">
             ✓
           </div>
-          <h2 className={`${londrina.className} text-3xl font-bold text-emerald-600`}>Payment Successful!</h2>
+          <h2 className={`${londrina.className} text-3xl font-bold text-emerald-600`}>Payment Confirmed!</h2>
           <p className="text-gray-500 text-sm">
-            Thank you for your purchase. Your order has been placed and paid successfully.
+            Thank you! Your payment has been verified and your order is booked.
           </p>
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-3 text-xs text-emerald-800 font-medium">
+            Redirecting to your orders profile in <b>{countdown}s</b>...
+          </div>
         </>
       )}
 
@@ -59,9 +93,9 @@ function StatusContent() {
           <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-500 text-4xl">
             ⌛
           </div>
-          <h2 className={`${londrina.className} text-3xl font-bold text-amber-500`}>Payment Pending</h2>
+          <h2 className={`${londrina.className} text-3xl font-bold text-amber-500`}>Payment Processing</h2>
           <p className="text-gray-500 text-sm">
-            Your payment is currently processing. We will notify you once the status updates.
+            Your payment is currently being verified. We will notify you once the status updates.
           </p>
         </>
       )}
@@ -69,33 +103,62 @@ function StatusContent() {
       <div className="border-t border-dashed border-gray-200 pt-6 space-y-3 text-left text-sm text-gray-600">
         <div className="flex justify-between">
           <span className="font-medium text-[#2e306a]">Order ID:</span>
-          <span className="font-mono text-gray-800">{orderId}</span>
+          <span className="font-mono text-gray-800">#ORD-{orderId.slice(-8).toUpperCase()}</span>
         </div>
         <div className="flex justify-between">
-          <span className="font-medium text-[#2e306a]">Transaction ID:</span>
-          <span className="font-mono text-gray-800">{txnId}</span>
+          <span className="font-medium text-[#2e306a]">SabPaisa Txn ID:</span>
+          <span className="font-mono text-gray-800">{currentTxnId}</span>
         </div>
         {amount !== "N/A" && (
           <div className="flex justify-between">
             <span className="font-medium text-[#2e306a]">Amount Paid:</span>
-            <span className="font-bold text-gray-900">₹{amount}</span>
+            <span className="font-bold text-emerald-700">₹{amount}</span>
           </div>
         )}
       </div>
 
       <div className="pt-4 flex flex-col gap-3">
-        <Link
-          href="/"
-          className="w-full bg-[#00b8a2] hover:bg-[#009e8b] text-white font-semibold rounded-xl py-3 transition text-center"
-        >
-          Continue Shopping
-        </Link>
-        <Link
-          href="/checkout"
-          className="w-full border border-gray-300 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl py-3 transition text-center"
-        >
-          Retry Order
-        </Link>
+        {isSuccess ? (
+          <>
+            <Link
+              href={`/profile?tab=orders&highlight=${orderId}`}
+              className="w-full bg-[#1e1e4d] hover:bg-[#2e306a] text-white font-bold rounded-xl py-3.5 transition text-center shadow-md flex items-center justify-center gap-2 text-sm"
+            >
+              🛍️ View Order in Profile →
+            </Link>
+            <Link
+              href="/listing"
+              className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl py-3 transition text-center text-xs"
+            >
+              Continue Shopping
+            </Link>
+          </>
+        ) : (
+          <>
+            {!isSuccess && (
+              <button
+                onClick={checkLiveStatus}
+                disabled={isVerifying}
+                className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-semibold rounded-xl py-3 transition text-center shadow flex items-center justify-center gap-2 text-sm"
+              >
+                {isVerifying ? (
+                  <>
+                    <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span>
+                    Checking SabPaisa Status...
+                  </>
+                ) : (
+                  <>🔄 Check Status with SabPaisa</>
+                )}
+              </button>
+            )}
+            <Link
+              href="/checkout"
+              className="w-full border border-gray-300 hover:bg-gray-50 text-gray-600 font-semibold rounded-xl py-3 transition text-center text-sm"
+            >
+              Retry Order
+            </Link>
+          </>
+        )}
       </div>
     </div>
   );

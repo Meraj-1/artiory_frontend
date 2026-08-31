@@ -41,6 +41,11 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Scroll to top immediately when product ID changes
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
+
     if (!productId) { setLoading(false); return; }
 
     fetch(`/api/products/${productId}`, { cache: "no-store" })
@@ -83,9 +88,19 @@ export default function ProductPage() {
           dimensions: p.dimensions ?? {},
           gst: Number(p.gst ?? 0),
         });
+
+        // Ensure page view stays at the top after data renders
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        }
       })
       .catch(() => setProduct(null))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        if (typeof window !== "undefined") {
+          window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+        }
+      });
   }, [productId]);
 
   if (loading) return <ProductSkeleton />;

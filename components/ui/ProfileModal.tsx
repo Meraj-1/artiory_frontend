@@ -297,10 +297,16 @@ export default function ProfileModal({ onClose }: Props) {
     toast.success("Item removed from wishlist!", { autoClose: 700 });
   };
 
-  const handleAddToCart = (item: { id: string | number; name: string; image: string; price: number; [key: string]: unknown }) => {
+  const handleAddToCart = (item: { id: string | number; name: string; image: string; price: number; stock?: number; stockQuantity?: number; isOutOfStock?: boolean; [key: string]: unknown }) => {
+    const isOutOfStock = item.isOutOfStock || (item.stock !== undefined && item.stock <= 0) || (item.stockQuantity !== undefined && item.stockQuantity <= 0);
+    if (isOutOfStock) {
+      toast.error(`"${item.name}" is currently Out of Stock.`, { autoClose: 1500 });
+      return;
+    }
+
     cartDispatch({
       type: "ADD_ITEM",
-      payload: { ...item, id: String(item.id), quantity: 1 },
+      payload: { ...item, id: String(item.id), quantity: 1, stock: item.stock ?? item.stockQuantity ?? 999 },
     });
     toast.success("Item added to cart!", { autoClose: 700 });
   };
@@ -444,54 +450,89 @@ export default function ProfileModal({ onClose }: Props) {
                       </tr>
                     </thead>
                     <tbody>
-                      {wishlistState.items.map((item: { id: string; name: string; price: number; image: string }) => (
-                        <tr key={item.id} className="border-b dark:border-gray-700">
-                          <td className="p-3 flex items-center gap-3">
-                            <Image src={item.image} alt={item.name} width={70} height={70} className="rounded h-auto w-22" />
-                            <span className="text-[#1e1e4d] ">{item.name}</span>
-                          </td>
-                          <td className="p-3 text-[#1e1e4d] ">₹{item.price}</td>
-                          <td className="p-3 whitespace-nowrap">
-                            <div className="flex items-center space-x-2 justify-center">
-                              <button
-                                onClick={() => handleAddToCart(item)}
-                                className="bg-blue-600 cursor-pointer  transition-all duration-500 ease-in-out font-light text-sm  text-white px-3 py-1 rounded hover:bg-blue-700"
-                              >
-                                Add to Cart
-                              </button>
-                              <button
-                                onClick={() => handleRemoveFromWishlist(item.id)}
-                                className="text-red-500 cursor-pointer transition-all ease-in-out duration-300 hover:text-red-700"
-                              >
-                                <Trash2 size={20} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {wishlistState.items.map((item: any) => {
+                        const outOfStock = item.isOutOfStock || (item.stock !== undefined && item.stock <= 0) || (item.stockQuantity !== undefined && item.stockQuantity <= 0);
+
+                        return (
+                          <tr key={item.id} className="border-b dark:border-gray-700">
+                            <td className="p-3 flex items-center gap-3">
+                              <Image src={item.image} alt={item.name} width={70} height={70} className="rounded h-auto w-22 object-cover" />
+                              <div>
+                                <span className="text-[#1e1e4d] font-medium block">{item.name}</span>
+                                {outOfStock && (
+                                  <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 inline-block mt-1">
+                                    Out of Stock
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3 text-[#1e1e4d] font-bold">₹{item.price}</td>
+                            <td className="p-3 whitespace-nowrap">
+                              <div className="flex items-center space-x-2 justify-center">
+                                {outOfStock ? (
+                                  <button
+                                    disabled
+                                    className="bg-gray-300 text-gray-500 font-medium text-xs px-3 py-1.5 rounded cursor-not-allowed"
+                                  >
+                                    Out of Stock
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleAddToCart(item)}
+                                    className="bg-blue-600 cursor-pointer transition-all duration-300 font-medium text-xs text-white px-3 py-1.5 rounded hover:bg-blue-700 shadow-xs"
+                                  >
+                                    Add to Cart
+                                  </button>
+                                )}
+                                <button
+                                  onClick={() => handleRemoveFromWishlist(item.id)}
+                                  className="text-red-500 cursor-pointer transition-all ease-in-out duration-300 hover:text-red-700 p-1"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
                 <div className="md:hidden space-y-4">
-                  {wishlistState.items.map((item: { id: string; name: string; price: number; image: string }) => (
-                    <div key={item.id} className="border dark:border-gray-700 rounded-lg p-4 flex flex-col gap-3 bg-white/5">
-                      <div className="flex gap-3 items-center">
-                        <Image src={item.image} alt={item.name} width={60} height={60} className="rounded" />
-                        <div>
-                          <p className="font-semibold text-[#1e1e4d] dark:text-gray-100">{item.name}</p>
-                          <p className="text-gray-600 dark:text-gray-400 text-sm">₹{item.price}</p>
+                  {wishlistState.items.map((item: any) => {
+                    const outOfStock = item.isOutOfStock || (item.stock !== undefined && item.stock <= 0) || (item.stockQuantity !== undefined && item.stockQuantity <= 0);
+
+                    return (
+                      <div key={item.id} className="border dark:border-gray-700 rounded-lg p-4 flex flex-col gap-3 bg-white/5">
+                        <div className="flex gap-3 items-center">
+                          <Image src={item.image} alt={item.name} width={60} height={60} className="rounded object-cover" />
+                          <div>
+                            <p className="font-semibold text-[#1e1e4d] dark:text-gray-100">{item.name}</p>
+                            <p className="text-gray-600 dark:text-gray-400 text-sm">₹{item.price}</p>
+                            {outOfStock && (
+                              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 inline-block mt-1">
+                                Out of Stock
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          {outOfStock ? (
+                            <button disabled className="bg-gray-300 text-gray-500 text-xs px-3 py-1.5 rounded cursor-not-allowed">
+                              Out of Stock
+                            </button>
+                          ) : (
+                            <button onClick={() => handleAddToCart(item)} className="bg-blue-600 text-white text-xs px-3 py-1.5 rounded hover:bg-blue-700">
+                              Add to Cart
+                            </button>
+                          )}
+                          <button onClick={() => handleRemoveFromWishlist(item.id)} className="text-red-500 hover:text-red-700">
+                            <Trash2 size={18} />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <button onClick={() => handleAddToCart(item)} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">
-                          Add to Cart
-                        </button>
-                        <button onClick={() => handleRemoveFromWishlist(item.id)} className="text-red-500 hover:text-red-700">
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -770,13 +811,11 @@ export default function ProfileModal({ onClose }: Props) {
                 <p className="text-xs md:text-sm">{user.email}</p>
               </div>
 
-              <div className="mt-5  md:mt-9 grid grid-cols-2 md:grid-cols-1 gap-3">
+              <div className="mt-5 md:mt-9 grid grid-cols-2 md:grid-cols-1 gap-3">
                 {[
                   { key: "profile", label: "View Profile", icon: <User size={18} /> },
-                  { key: "orders", label: "My Orders", icon: <BaggageClaim size={18} /> },
                   { key: "wishlist", label: "My Wishlist", icon: <Heart size={18} /> },
                   { key: "address", label: "My Addresses", icon: <MapPin size={18} /> },
-                  { key: "settings", label: "Account Settings", icon: <Settings2 size={18} /> },
                 ].map((btn) => (
                   <button key={btn.key} onClick={() => setActiveSection(btn.key)} className="flex cursor-pointer items-center justify-center gap-2 px-4 py-3 w-full rounded-lg bg-white/5 hover:bg-white/10 transition font-medium text-sm">
                     {btn.icon}

@@ -13,18 +13,24 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [cart, dispatch] = useReducer(cartReducer, initialCartState);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const isLocalChange = React.useRef(false);
+
+  const userId = (session?.user as any)?.id || session?.user?.email || null;
+  const lastUserIdRef = React.useRef<string | null>(null);
+  const syncTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
 
   const cartItems = cart.items;
 
   const getCartTotal = () =>
     cart.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  // Fetch initial cart from backend when session changes
+  // Fetch initial cart from backend ONLY once when user logs in or changes
   React.useEffect(() => {
-    if (session?.user) {
+    if (status === "authenticated" && userId) {
+      if (lastUserIdRef.current === userId) return;
+      lastUserIdRef.current = userId;
+
       fetch("/api/users/cart")
         .then((res) => res.json())
         .then((data) => {
@@ -43,16 +49,21 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         .catch((err) => {
           console.error("Failed to load cart:", err);
         });
-    } else {
-      dispatch({ type: "SET_CART", payload: [] });
+    } else if (status === "unauthenticated") {
+      if (lastUserIdRef.current !== null) {
+        lastUserIdRef.current = null;
+        dispatch({ type: "SET_CART", payload: [] });
+      }
     }
-  }, [session]);
+  }, [status, userId]);
 
-  // Sync cart changes to database
-  React.useEffect(() => {
-    if (isLocalChange.current && session?.user) {
-      isLocalChange.current = false;
-      const cartItemsForBackend = cart.items.map((item) => ({
+  // Debounced sync function to prevent network flooding
+  const syncCartToBackend = (items: any[]) => {
+    if (status !== "authenticated" || !userId) return;
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+
+    syncTimeoutRef.current = setTimeout(() => {
+      const cartItemsForBackend = items.map((item) => ({
         productId: item.id,
         name: item.name,
         price: item.price,
@@ -66,8 +77,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cartItems: cartItemsForBackend }),
       }).catch((err) => console.error("Failed to sync cart:", err));
-    }
-  }, [cart.items, session]);
+    }, 400);
+  };
 
   const customDispatch = (action: any) => {
     if (action.type === "ADD_ITEM") {
@@ -82,9 +93,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
       // Check stock limit for ADD_ITEM
       const existing = cart.items.find((item) => item.id === action.payload.id);
-      const stockLimit = action.payload.stock ?? existing?.stock ?? Infinity;
+      const stockLimit = action.payload.stock ?? existing?.stock ?? (action.payload.stockQuantity ?? Infinity);
       const currentQty = existing ? existing.quantity : 0;
       const addedQty = action.payload.quantity ?? 1;
+
+      if (stockLimit <= 0 || action.payload.isOutOfStock) {
+        toast.error("This item is currently out of stock!", {
+          position: "bottom-right",
+          autoClose: 2000,
+        });
+        return;
+      }
 
       if (currentQty + addedQty > stockLimit) {
         toast.warn(`Cannot add more. Only ${stockLimit} items in stock!`, {
@@ -111,10 +130,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    if (["ADD_ITEM", "REMOVE_ITEM", "UPDATE_QUANTITY", "CLEAR_CART"].includes(action.type)) {
-      isLocalChange.current = true;
-    }
     dispatch(action);
+
+    if (["ADD_ITEM", "REMOVE_ITEM", "UPDATE_QUANTITY", "CLEAR_CART"].includes(action.type)) {
+      const nextState = cartReducer(cart, action);
+      syncCartToBackend(nextState.items);
+    }
   };
 
   return (

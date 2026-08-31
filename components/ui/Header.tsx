@@ -32,6 +32,19 @@ const Header: React.FC = () => {
   const menuOpenRef = useRef<boolean>(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const [hoverOpen, setHoverOpen] = useState(false);
+  const hoverTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  const handleMouseEnter = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    setHoverOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    if (hoverTimeout.current) clearTimeout(hoverTimeout.current);
+    hoverTimeout.current = setTimeout(() => {
+      setHoverOpen(false);
+    }, 300);
+  };
 
   const router = useRouter();
   const pathname = usePathname();
@@ -210,9 +223,9 @@ const Header: React.FC = () => {
             {/* Profile / Login (changed behaviour) */}
             {user ? (
               <div
-                className="relative"
-              onMouseEnter={() => setHoverOpen(true)}
-              onMouseLeave={() => setHoverOpen(false)}
+                className="relative py-1"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
                 <button
                   onClick={toggleAccountQuery}
@@ -226,11 +239,11 @@ const Header: React.FC = () => {
                       width={36}
                       unoptimized
                       height={36}
-                      className="rounded-full"
+                      className="rounded-full border border-slate-200 shadow-xs"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm">
-                      {(user.name || "U").charAt(0)}
+                    <div className="w-9 h-9 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-bold text-slate-800">
+                      {(user.name || "U").charAt(0).toUpperCase()}
                     </div>
                   )}
                   <span
@@ -240,28 +253,67 @@ const Header: React.FC = () => {
                   </span>
                 </button>
 
-                {/* Hover dropdown */}
+                {/* Hover dropdown with invisible bridge */}
                 {hoverOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg z-50 p-3 text-sm">
-                    <div className="font-medium">{user.name}</div>
-                    <div className="text-xs text-gray-500 truncate">
-                      {user.email}
+                  <div 
+                    className="absolute right-0 top-full mt-1 w-56 bg-white border-2 border-slate-200 rounded-2xl shadow-xl z-50 p-3 text-xs space-y-1.5 before:absolute before:-top-3 before:left-0 before:w-full before:h-3 before:content-['']"
+                    onMouseEnter={handleMouseEnter}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <div className="px-2 py-1.5 bg-slate-50 rounded-xl border border-slate-100">
+                      <div className="font-black text-slate-950 text-sm truncate">{user.name}</div>
+                      <div className="text-[11px] text-slate-500 font-medium truncate">
+                        {user.email}
+                      </div>
                     </div>
-                    <hr className="my-2" />
-                    <button
-                      onClick={() => {
-                        toggleAccountQuery();
-                      }}
-                      className="w-full text-left py-1 text-sm hover:text-[#00b8a2]"
-                    >
-                      View profile
-                    </button>
-                    <button
-                      onClick={onSignOut}
-                      className="w-full text-left py-1 text-sm text-red-600 hover:text-red-700"
-                    >
-                      Logout
-                    </button>
+
+                    <div className="pt-1 space-y-1 font-bold">
+                      <Link
+                        href="/profile?tab=orders"
+                        onClick={() => setHoverOpen(false)}
+                        className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
+                      >
+                        <span>📦</span>
+                        <span>My Orders</span>
+                      </Link>
+
+                      <Link
+                        href="/profile?tab=addresses"
+                        onClick={() => setHoverOpen(false)}
+                        className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
+                      >
+                        <span>📍</span>
+                        <span>Saved Addresses</span>
+                      </Link>
+
+                      <Link
+                        href="/profile"
+                        onClick={() => setHoverOpen(false)}
+                        className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
+                      >
+                        <span>👤</span>
+                        <span>Account Profile</span>
+                      </Link>
+
+                      <Link
+                        href="/wish"
+                        onClick={() => setHoverOpen(false)}
+                        className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
+                      >
+                        <span>❤️</span>
+                        <span>My Wishlist</span>
+                      </Link>
+
+                      <div className="border-t border-slate-100 pt-1">
+                        <button
+                          onClick={onSignOut}
+                          className="w-full text-left px-3 py-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl block transition font-bold flex items-center gap-2"
+                        >
+                          <span>🚪</span>
+                          <span>Logout</span>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -281,46 +333,129 @@ const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* ====== MOBILE MENU (unchanged) ====== */}
+        {/* ====== MOBILE MENU (Full Responsive Drawer) ====== */}
         <nav
-          className={`${londrina.className
-            } absolute top-0 left-0 w-[80%] h-[100vh] bg-white shadow-lg p-5 md:hidden z-50 transform transition-all duration-500 ease-in-out ${menuOpenRef.current
+          className={`${londrina.className} absolute top-0 left-0 w-[85%] max-w-[320px] h-[100vh] bg-white shadow-2xl p-5 md:hidden z-50 transform transition-all duration-500 ease-in-out overflow-y-auto ${
+            menuOpenRef.current
               ? "opacity-100 translate-x-0"
               : "opacity-0 -translate-x-5 pointer-events-none"
-            }`}
+          }`}
         >
-          <ul className="flex h-22 absolute top-0 left-0 w-full bg-[#00b8a2] justify-between p-4 items-center">
-            <li className="flex gap-2 w-full items-center">
-              <ProfileIcon className="w-8 h-8 text-white" />
-              <span className="text-white">LOGIN & SIGNUP</span>
-            </li>
-            <Link href="/">
+          {/* Top Banner */}
+          <div className="flex absolute top-0 left-0 w-full bg-[#00b8a2] justify-between p-4 items-center">
+            {user ? (
+              <Link href="/profile" onClick={closeMenu} className="flex gap-3 items-center text-white">
+                {user.image ? (
+                  <Image src={user.image} alt={user.name || "User"} width={34} height={34} unoptimized className="rounded-full border border-white/40" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-white text-[#00b8a2] font-black flex items-center justify-center text-sm">
+                    {(user.name || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="leading-tight">
+                  <p className="text-sm font-bold truncate max-w-[140px]">{user.name}</p>
+                  <p className="text-[10px] text-white/80 font-sans truncate max-w-[140px]">{user.email}</p>
+                </div>
+              </Link>
+            ) : (
+              <Link href="/auth/signin" onClick={closeMenu} className="flex gap-2 items-center text-white">
+                <ProfileIcon className="w-7 h-7 text-white" />
+                <span className="text-sm font-bold uppercase tracking-wider">LOGIN / SIGNUP</span>
+              </Link>
+            )}
+            <Link href="/" onClick={closeMenu}>
               <Image
-                width={100}
-                height={50}
-                className="h-auto w-30 lg:w-40 cursor-pointer"
+                width={85}
+                height={40}
+                className="h-auto w-24 cursor-pointer"
                 src="/Artiory-Logo.svg"
                 alt="logo"
               />
             </Link>
-          </ul>
-          <ul className="flex mt-24 flex-col gap-6">
-            <li onClick={closeMenu}>
-              <Link href="/about" className="hover:text-[#00b8a2]">
-                ABOUT US
-              </Link>
-            </li>
-            <li onClick={closeMenu}>
-              <Link href="/listing" className="hover:text-[#00b8a2]">
-                PRODUCTS
-              </Link>
-            </li>
-            <li onClick={closeMenu}>
-              <Link href="/contact" className="hover:text-[#00b8a2]">
-                CONTACT US
-              </Link>
-            </li>
-          </ul>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="mt-20 space-y-6">
+            {/* Account Quick Links for Logged in user */}
+            {user && (
+              <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 space-y-2.5 font-sans text-xs">
+                <p className="text-[10px] uppercase font-black tracking-wider text-slate-400">My Account</p>
+                <div className="grid grid-cols-2 gap-2 font-bold text-slate-800">
+                  <Link
+                    href="/profile?tab=orders"
+                    onClick={closeMenu}
+                    className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span>📦</span>
+                    <span>Orders</span>
+                  </Link>
+                  <Link
+                    href="/profile?tab=addresses"
+                    onClick={closeMenu}
+                    className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span>📍</span>
+                    <span>Addresses</span>
+                  </Link>
+                  <Link
+                    href="/wish"
+                    onClick={closeMenu}
+                    className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span>❤️</span>
+                    <span>Wishlist</span>
+                  </Link>
+                  <Link
+                    href="/profile"
+                    onClick={closeMenu}
+                    className="p-2.5 bg-white rounded-xl border border-slate-200 flex items-center gap-1.5 shadow-xs"
+                  >
+                    <span>👤</span>
+                    <span>Profile</span>
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            <ul className="flex flex-col gap-4 text-xl font-bold text-[#2e306a]">
+              <li onClick={closeMenu}>
+                <Link href="/" className="hover:text-[#00b8a2] transition flex items-center justify-between">
+                  <span>HOME</span>
+                  <span className="text-sm opacity-40">→</span>
+                </Link>
+              </li>
+              <li onClick={closeMenu}>
+                <Link href="/listing" className="hover:text-[#00b8a2] transition flex items-center justify-between">
+                  <span>ALL PRODUCTS</span>
+                  <span className="text-sm opacity-40">→</span>
+                </Link>
+              </li>
+              <li onClick={closeMenu}>
+                <Link href="/about" className="hover:text-[#00b8a2] transition flex items-center justify-between">
+                  <span>ABOUT US</span>
+                  <span className="text-sm opacity-40">→</span>
+                </Link>
+              </li>
+              <li onClick={closeMenu}>
+                <Link href="/contact" className="hover:text-[#00b8a2] transition flex items-center justify-between">
+                  <span>CONTACT US</span>
+                  <span className="text-sm opacity-40">→</span>
+                </Link>
+              </li>
+            </ul>
+
+            {user && (
+              <div className="pt-4 border-t border-slate-200 font-sans">
+                <button
+                  onClick={() => { closeMenu(); onSignOut(); }}
+                  className="w-full py-2.5 px-4 rounded-xl font-bold text-xs text-rose-600 bg-rose-50 border border-rose-100 flex items-center justify-center gap-2"
+                >
+                  <span>🚪</span>
+                  <span>Log Out of Account</span>
+                </button>
+              </div>
+            )}
+          </div>
         </nav>
       </header>
 

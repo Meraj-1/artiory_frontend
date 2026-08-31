@@ -5,6 +5,8 @@ export interface CartItem {
   price: number;
   quantity: number;
   stock?: number;
+  weight?: number;
+  isOutOfStock?: boolean;
 }
 
 export interface CartState {

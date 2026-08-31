@@ -24,22 +24,31 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     wishlistReducer,
     initialWishlistState
   );
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const isLocalChange = React.useRef(false);
 
-  // Fetch initial wishlist from backend when session changes
+  const userId = (session?.user as any)?.id || session?.user?.email || null;
+  const lastUserIdRef = React.useRef<string | null>(null);
+  const syncTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // Fetch initial wishlist from backend ONLY once when user logs in or changes
   React.useEffect(() => {
-    if (session?.user) {
+    if (status === "authenticated" && userId) {
+      if (lastUserIdRef.current === userId) return;
+      lastUserIdRef.current = userId;
+
       fetch("/api/users/wishlist")
         .then((res) => res.json())
         .then((data) => {
           if (data.success && Array.isArray(data.wishlist)) {
             const formatted = data.wishlist.map((item: any) => ({
-              id: item.productId,
+              id: item.productId || item.id,
               name: item.name,
               price: item.price,
               image: item.image,
+              stock: item.stock !== undefined ? item.stock : item.stockQuantity,
+              stockQuantity: item.stockQuantity !== undefined ? item.stockQuantity : item.stock,
+              isOutOfStock: item.isOutOfStock !== undefined ? item.isOutOfStock : ((item.stock !== undefined && item.stock <= 0) || (item.stockQuantity !== undefined && item.stockQuantity <= 0)),
             }));
             wishlistDispatch({ type: "SET_WISHLIST", payload: formatted });
           }
@@ -47,20 +56,28 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         .catch((err) => {
           console.error("Failed to load wishlist:", err);
         });
-    } else {
-      wishlistDispatch({ type: "SET_WISHLIST", payload: [] });
+    } else if (status === "unauthenticated") {
+      if (lastUserIdRef.current !== null) {
+        lastUserIdRef.current = null;
+        wishlistDispatch({ type: "SET_WISHLIST", payload: [] });
+      }
     }
-  }, [session]);
+  }, [status, userId]);
 
-  // Sync wishlist changes to database
-  React.useEffect(() => {
-    if (isLocalChange.current && session?.user) {
-      isLocalChange.current = false;
-      const wishlistItemsForBackend = wishlistState.items.map((item) => ({
+  // Debounced sync function
+  const syncWishlistToBackend = (items: any[]) => {
+    if (status !== "authenticated" || !userId) return;
+    if (syncTimeoutRef.current) clearTimeout(syncTimeoutRef.current);
+
+    syncTimeoutRef.current = setTimeout(() => {
+      const wishlistItemsForBackend = items.map((item) => ({
         productId: item.id,
         name: item.name,
         price: item.price,
         image: item.image,
+        stock: item.stock,
+        stockQuantity: item.stockQuantity,
+        isOutOfStock: item.isOutOfStock
       }));
 
       fetch("/api/users/wishlist", {
@@ -68,8 +85,8 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ wishlistItems: wishlistItemsForBackend }),
       }).catch((err) => console.error("Failed to sync wishlist:", err));
-    }
-  }, [wishlistState.items, session]);
+    }, 400);
+  };
 
   const customWishlistDispatch = (action: any) => {
     if (action.type === "ADD_TO_WISHLIST") {
@@ -83,10 +100,12 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    if (["ADD_TO_WISHLIST", "REMOVE_FROM_WISHLIST", "CLEAR_WISHLIST"].includes(action.type)) {
-      isLocalChange.current = true;
-    }
     wishlistDispatch(action);
+
+    if (["ADD_TO_WISHLIST", "REMOVE_FROM_WISHLIST", "CLEAR_WISHLIST"].includes(action.type)) {
+      const nextState = wishlistReducer(wishlistState, action);
+      syncWishlistToBackend(nextState.items);
+    }
   };
 
   return (

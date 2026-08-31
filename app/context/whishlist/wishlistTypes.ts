@@ -3,6 +3,9 @@ export interface WishlistItem {
   name: string;
   price: number;
   image: string;
+  stock?: number;
+  stockQuantity?: number;
+  isOutOfStock?: boolean;
 }
 
 export interface WishlistState {

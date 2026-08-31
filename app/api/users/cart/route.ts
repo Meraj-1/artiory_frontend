@@ -42,11 +42,11 @@ function getBackendToken(userId: string) {
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !(session.user as { id?: string }).id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session?.user as any)?.id || (session?.user as any)?._id || (session?.user as any)?.userId;
+    if (!session?.user || !userId) {
+      return NextResponse.json({ success: true, cart: [] }, { status: 200 });
     }
 
-    const userId = (session.user as { id: string }).id;
     const token = getBackendToken(userId);
 
     const res = await fetch(`${API_BASE_URL}/api/users/cart`, {
@@ -59,26 +59,26 @@ export async function GET() {
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       const text = await res.text();
-      console.error(`Cart Proxy GET: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 1000));
-      return NextResponse.json({ error: "Backend returned invalid format" }, { status: res.status });
+      console.error(`Cart Proxy GET: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 500));
+      return NextResponse.json({ success: true, cart: [] }, { status: 200 });
     }
 
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
     console.error("Cart proxy GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: true, cart: [] }, { status: 200 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !(session.user as { id?: string }).id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const userId = (session?.user as any)?.id || (session?.user as any)?._id || (session?.user as any)?.userId;
+    if (!session?.user || !userId) {
+      return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    const userId = (session.user as { id: string }).id;
     const token = getBackendToken(userId);
     const body = await req.json();
 
@@ -94,14 +94,14 @@ export async function POST(req: NextRequest) {
     const contentType = res.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       const text = await res.text();
-      console.error(`Cart Proxy POST: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 1000));
-      return NextResponse.json({ error: "Backend returned invalid format" }, { status: res.status });
+      console.error(`Cart Proxy POST: Backend returned non-JSON response (status ${res.status}):`, text.slice(0, 500));
+      return NextResponse.json({ success: false, message: "Backend error" }, { status: 200 });
     }
 
     const data = await res.json();
     return NextResponse.json(data, { status: res.status });
   } catch (error) {
     console.error("Cart proxy POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 200 });
   }
 }

@@ -27,26 +27,31 @@ export default function CheckoutPage() {
   const [form, setForm] = useState({
     firstName: "",
     lastName: "",
+    home: "",
     address: "",
+    landmark: "",
     city: "",
     state: "",
     zip: "",
     phone: "",
+    alternatePhone: "",
     email: "",
     notes: "",
+    addressType: "Home",
+    saveAddressToProfile: true,
     paymentMethod: "sabpaisa",
   });
 
   const [pincodeChecking, setPincodeChecking] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState<"serviceable" | "unserviceable" | "">("");
   const [pincodeMessage, setPincodeMessage] = useState("");
-  const [shipping, setShipping] = useState<number>(0);
+  const [shipping, setShipping] = useState<number>(149);
 
   const checkPincode = async (zipCode: string) => {
-    if (!zipCode || zipCode.trim().length !== 6) {
+    const cleaned = zipCode.replace(/\D/g, "");
+    if (!cleaned || cleaned.length !== 6) {
       setPincodeStatus("");
       setPincodeMessage("");
-      setShipping(0);
       return;
     }
 
@@ -66,23 +71,35 @@ export default function CheckoutPage() {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ pincode: zipCode, totalPrice: getCartTotal(), orderItems }),
+        body: JSON.stringify({
+          pincode: cleaned,
+          totalPrice: getCartTotal(),
+          orderItems,
+          payment_method: form.paymentMethod === "cod" ? "cod" : "prepaid"
+        }),
       });
       const chargeJson = await chargeRes.json();
-      if (chargeRes.ok && chargeJson.success) {
-        setShipping(chargeJson.shippingCharge);
+      if (chargeRes.ok && chargeJson.success && chargeJson.serviceable !== false) {
+        const liveShippingRate = Number(chargeJson.shippingCharge || 65);
+        setShipping(liveShippingRate);
         setPincodeStatus("serviceable");
-        setPincodeMessage(`✅ Delivery is available to your area. Shipping: ₹${chargeJson.shippingCharge}`);
-      } else {
-        setShipping(0);
+        const courierNote = chargeJson.courierName ? ` via ${chargeJson.courierName}` : "";
+        const weightNote = chargeJson.weightGrams ? ` (${chargeJson.weightGrams} gm)` : "";
+        const eddNote = chargeJson.edd ? ` • Est. Delivery: ${chargeJson.edd}` : "";
+        setPincodeMessage(`✅ Delivery available${courierNote}${weightNote} • Shipping: ₹${liveShippingRate}${eddNote}`);
+      } else if (chargeJson.serviceable === false) {
         setPincodeStatus("unserviceable");
         setPincodeMessage(`❌ ${chargeJson.message || "Sorry, delivery is not available for this pincode."}`);
+      } else {
+        setShipping(65);
+        setPincodeStatus("serviceable");
+        setPincodeMessage("✅ Delivery available • Standard Shipping: ₹65");
       }
     } catch (err) {
       console.error("Pincode rate check error:", err);
-      setShipping(0);
-      setPincodeStatus("unserviceable");
-      setPincodeMessage("❌ Sorry, delivery is not available for this pincode.");
+      setShipping(65);
+      setPincodeStatus("serviceable");
+      setPincodeMessage("✅ Delivery available • Shipping: ₹65");
     } finally {
       setPincodeChecking(false);
     }
@@ -149,8 +166,26 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!form.lastName || !form.address || !form.city || !form.state || !form.email || !form.phone) {
-      alert("Please fill in all required fields marked with *");
+    if (!form.lastName.trim() || !form.home.trim() || !form.address.trim() || !form.city.trim() || !form.state.trim() || !form.email.trim() || !form.phone.trim() || !form.zip.trim()) {
+      alert("Please fill in all required delivery information marked with * (Name, Flat/House No, Street, City, State, 6-digit Pincode, Mobile & Email).");
+      return;
+    }
+
+    const cleanedPhone = form.phone.replace(/\D/g, "");
+    if (cleanedPhone.length < 10) {
+      alert("Please enter a valid 10-digit mobile number for delivery.");
+      return;
+    }
+
+    const cleanedZip = form.zip.replace(/\D/g, "");
+    if (cleanedZip.length !== 6) {
+      alert("Please enter a valid 6-digit postal PIN code.");
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      alert("Please enter a valid email address.");
       return;
     }
 
@@ -169,10 +204,52 @@ export default function CheckoutPage() {
         price: item.price,
       }));
 
+      const shippingAddress = {
+        name: `${form.firstName} ${form.lastName}`.trim() || "Customer",
+        email: form.email.trim(),
+        phone: cleanedPhone.slice(-10),
+        alternatePhone: form.alternatePhone?.trim() ? form.alternatePhone.replace(/\D/g, "").slice(-10) : "",
+        home: form.home.trim(),
+        street: form.address.trim(),
+        landmark: form.landmark?.trim() || "",
+        address: [form.home.trim(), form.address.trim(), form.landmark?.trim()].filter(Boolean).join(", "),
+        city: form.city.trim(),
+        state: form.state.trim(),
+        postalCode: cleanedZip,
+        country: "India",
+        addressType: form.addressType || "Home",
+      };
+
+      // Optional: Auto-save new address to profile if checked
+      if (form.saveAddressToProfile && session?.user) {
+        fetch("/api/address", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            home: form.home.trim(),
+            street: form.address.trim(),
+            landmark: form.landmark?.trim() || "",
+            city: form.city.trim(),
+            state: form.state.trim(),
+            postalCode: cleanedZip,
+            phone: cleanedPhone.slice(-10),
+            type: form.addressType || "Home",
+            isDefault: savedAddresses.length === 0,
+          }),
+        }).catch((e) => console.error("Address auto-save notice:", e));
+      }
+
       const orderRes = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderItems, totalPrice: total }),
+        body: JSON.stringify({
+          orderItems,
+          totalPrice: total,
+          shippingAddress,
+          discountAmount,
+          shippingCharge: shipping,
+          couponCode: appliedCoupon?.code || "",
+        }),
       });
 
       const orderJson = await orderRes.json();
@@ -186,7 +263,7 @@ export default function CheckoutPage() {
         const paymentRes = await fetch("/api/payment/sabpaisa/initiate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ orderId }),
+          body: JSON.stringify({ orderId, returnUrl: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000" }),
         });
 
         const paymentJson = await paymentRes.json();
@@ -270,11 +347,15 @@ export default function CheckoutPage() {
     if (selected) {
       setForm((prev) => ({
         ...prev,
-        address: selected.street || "",
+        home: selected.home || "",
+        address: selected.street || selected.address || "",
+        landmark: selected.landmark || "",
         city: selected.city || "",
         state: selected.state || "",
         zip: selected.postalCode || "",
         phone: selected.phone || prev.phone || "",
+        alternatePhone: selected.alternatePhone || prev.alternatePhone || "",
+        addressType: selected.type || prev.addressType || "Home",
       }));
       checkPincode(selected.postalCode || "");
     }
@@ -331,85 +412,226 @@ export default function CheckoutPage() {
               </div>
             )}
 
+            {/* Full Name */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input
-                name="firstName"
-                value={form.firstName}
-                onChange={handleChange}
-                placeholder="First Name"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
-              <input
-                name="lastName"
-                value={form.lastName}
-                onChange={handleChange}
-                placeholder="Last Name *"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
-            </div>
-            <input
-              name="address"
-              value={form.address}
-              onChange={handleChange}
-              placeholder="Street Address *"
-              className="border border-gray-300 rounded-lg p-3 w-full mt-4"
-            />
-            <div className="grid grid-cols-2 gap-4 mt-4">
-              <input
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-                placeholder="Town / City *"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
-              <input
-                name="state"
-                value={form.state}
-                onChange={handleChange}
-                placeholder="State *"
-                className="border border-gray-300 rounded-lg p-3 w-full"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4 mt-4">
               <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">First Name</label>
+                <input
+                  name="firstName"
+                  value={form.firstName}
+                  onChange={handleChange}
+                  placeholder="First Name"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Last Name *</label>
+                <input
+                  name="lastName"
+                  required
+                  value={form.lastName}
+                  onChange={handleChange}
+                  placeholder="Last Name *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Contact Details (Phone, Alternate Phone, Email) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Primary Mobile Number *</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 text-xs font-bold text-gray-500 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg">
+                    +91
+                  </span>
+                  <input
+                    name="phone"
+                    required
+                    type="tel"
+                    maxLength={10}
+                    value={form.phone}
+                    onChange={handleChange}
+                    placeholder="10-digit mobile number *"
+                    className="border border-gray-300 rounded-r-lg p-3 w-full text-sm"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Alternate Phone (Optional)</label>
+                <div className="flex">
+                  <span className="inline-flex items-center px-3 text-xs font-bold text-gray-500 bg-gray-100 border border-r-0 border-gray-300 rounded-l-lg">
+                    +91
+                  </span>
+                  <input
+                    name="alternatePhone"
+                    type="tel"
+                    maxLength={10}
+                    value={form.alternatePhone}
+                    onChange={handleChange}
+                    placeholder="Secondary contact"
+                    className="border border-gray-300 rounded-r-lg p-3 w-full text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address * (For live tracking updates & invoice)</label>
+              <input
+                name="email"
+                required
+                type="email"
+                value={form.email}
+                onChange={handleChange}
+                placeholder="name@example.com *"
+                className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+              />
+            </div>
+
+            {/* Address Line 1 & Line 2 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Flat / House No. / Building / Floor *</label>
+                <input
+                  name="home"
+                  required
+                  value={form.home}
+                  onChange={handleChange}
+                  placeholder="e.g. Flat 402, Sunshine Apts *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Street / Area / Colony / Road *</label>
+                <input
+                  name="address"
+                  required
+                  value={form.address}
+                  onChange={handleChange}
+                  placeholder="e.g. 14th Main Road, Indiranagar *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Landmark */}
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Nearby Landmark (Optional - Helps courier find you easily)</label>
+              <input
+                name="landmark"
+                value={form.landmark}
+                onChange={handleChange}
+                placeholder="e.g. Near City Hospital / Opposite Metro Pillar 120"
+                className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+              />
+            </div>
+
+            {/* City & State */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Town / City *</label>
+                <input
+                  name="city"
+                  required
+                  value={form.city}
+                  onChange={handleChange}
+                  placeholder="e.g. Mumbai *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">State *</label>
+                <input
+                  name="state"
+                  required
+                  value={form.state}
+                  onChange={handleChange}
+                  placeholder="e.g. Maharashtra *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
+                />
+              </div>
+            </div>
+
+            {/* PIN Code & Country */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Postal PIN Code *</label>
                 <input
                   name="zip"
+                  required
+                  maxLength={6}
                   value={form.zip}
                   onChange={handleChange}
-                  placeholder="ZIP Code *"
-                  className="border border-gray-300 rounded-lg p-3 w-full"
+                  placeholder="6-digit PIN Code *"
+                  className="border border-gray-300 rounded-lg p-3 w-full text-sm"
                 />
-                {pincodeChecking && <p className="text-[10px] text-gray-500 mt-1">Verifying serviceability...</p>}
+                {pincodeChecking && <p className="text-[10px] text-gray-500 mt-1">Verifying courier serviceability...</p>}
                 {pincodeMessage && (
-                  <p className={`text-[10px] ${pincodeStatus === "serviceable" ? "text-emerald-600" : "text-rose-500"} font-medium mt-1`}>
+                  <p className={`text-[10px] ${pincodeStatus === "serviceable" ? "text-emerald-600" : "text-rose-500"} font-semibold mt-1`}>
                     {pincodeMessage}
                   </p>
                 )}
               </div>
               <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Country</label>
                 <input
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="Phone *"
-                  className="border border-gray-300 rounded-lg p-3 w-full"
+                  disabled
+                  value="India 🇮🇳"
+                  className="border border-gray-200 bg-gray-100 text-gray-700 rounded-lg p-3 w-full text-sm cursor-not-allowed font-medium"
                 />
               </div>
             </div>
-            <input
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              placeholder="Email Address*"
-              className="border border-gray-300 rounded-lg p-3 w-full mt-4"
-            />
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              placeholder="Order Notes (optional)"
-              className="border border-gray-300 rounded-lg p-3 w-full mt-4 h-24 resize-none"
-            />
+
+            {/* Address Type Selection */}
+            <div className="mt-5">
+              <label className="block text-xs font-semibold text-gray-700 mb-2">Address Type</label>
+              <div className="flex gap-3">
+                {[
+                  { id: "Home", label: "🏠 Home (All Day Delivery)" },
+                  { id: "Work", label: "🏢 Work / Office (10 AM - 6 PM)" },
+                  { id: "Other", label: "📍 Other" },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setForm({ ...form, addressType: t.id })}
+                    className={`flex-1 py-2 px-3 rounded-lg border text-xs font-semibold transition-all ${
+                      form.addressType === t.id
+                        ? "bg-[#2e306a] text-white border-[#2e306a]"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Order Notes */}
+            <div className="mt-4">
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Special Delivery Instructions (Optional)</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                placeholder="e.g. Leave package with building security if not available"
+                className="border border-gray-300 rounded-lg p-3 w-full text-sm h-20 resize-none"
+              />
+            </div>
+
+            {/* Save Address to Profile Checkbox */}
+            {session?.user && (
+              <label className="flex items-center gap-2.5 mt-4 cursor-pointer text-xs font-semibold text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={form.saveAddressToProfile}
+                  onChange={(e) => setForm({ ...form, saveAddressToProfile: e.target.checked })}
+                  className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300"
+                />
+                <span>Save this address to my profile for faster 1-click checkouts</span>
+              </label>
+            )}
           </div>
 
           {/* Payment Section */}
@@ -557,8 +779,8 @@ export default function CheckoutPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <span>Shipping</span>
-              <span>{shipping === 0 ? "Free" : `₹${shipping.toFixed(2)}`}</span>
+              <span>Shipping Charges (Flat Rate)</span>
+              <span className="font-semibold text-gray-800">&#8377;{shipping.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2">
               <span>Total</span>
