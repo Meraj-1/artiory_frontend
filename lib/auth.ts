@@ -48,6 +48,14 @@ export function signJwtHS256(payload: object, secret: string, expiresInMinutes =
   return `${signatureInput}.${encodedSignature}`;
 }
 
+export function getTargetBackendUrl(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || "";
+  if (!envUrl || envUrl.includes("api.artiory.com") || envUrl.includes("undefined")) {
+    return "https://artiory-backend.vercel.app";
+  }
+  return envUrl.replace(/\/+$/, "");
+}
+
 export function createBackendToken(user: any): string {
   const userId = user?.id || user?._id || user?.userId || "user_" + Math.random().toString(36).slice(2);
   const email = user?.email || "";

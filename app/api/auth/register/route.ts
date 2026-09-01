@@ -7,7 +7,9 @@ const RegisterBody = z.object({
   password: z.string().min(6),
 });
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL || "https://artiory-backend.vercel.app";
+import { getTargetBackendUrl } from "@/lib/auth";
+
+const API_BASE_URL = getTargetBackendUrl();
 
 export async function POST(req: Request) {
   try {
