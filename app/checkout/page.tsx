@@ -65,7 +65,7 @@ export default function CheckoutPage() {
         qty: item.quantity,
       }));
 
-      const chargeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.artiory.com"}/api/logistics/shipping-charge`, {
+      const chargeRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app"}/api/logistics/shipping-charge`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -39,6 +39,8 @@ import {
 import { useWishlist } from "@/app/context/whishlist/WishlistContext";
 import { useCart } from "@/app/context/cart/Cartcontext";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://artiory-backend.vercel.app";
+
 interface ProductDetails {
   _id?: string;
   productName?: string;
