@@ -8,16 +8,19 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_BASE_URL
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const token = createBackendToken(session.user);
     const body = await req.json();
+
+    const userObj = session?.user || {
+      id: "guest",
+      email: "customer@artiory.com",
+      name: "Customer",
+    };
+
+    const token = createBackendToken(userObj);
 
     const payload = {
       ...body,
-      returnUrl: body.returnUrl || req.nextUrl.origin || "http://localhost:3000"
+      returnUrl: body.returnUrl || req.nextUrl.origin || "https://artiory.com"
     };
 
     const res = await fetch(`${API_BASE_URL}/api/payment/sabpaisa/initiate`, {
