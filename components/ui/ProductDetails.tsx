@@ -132,28 +132,27 @@ export default function ProductDetail({ product }: { product: ProductType }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 xl:gap-12 2xl:gap-14">
 
         {/* Left — Images + Hover Zoom Window */}
-        <div className="flex flex-col-reverse sm:flex-row gap-3 relative">
+        <div className="flex flex-col-reverse sm:flex-row gap-3.5 relative items-start">
 
           {/* Thumbnails */}
-          <div className="flex flex-row sm:flex-col gap-2 overflow-x-auto sm:overflow-y-auto sm:max-h-[500px] md:max-h-[520px] lg:max-h-[580px] xl:max-h-[680px] 2xl:max-h-[760px] pb-1 sm:pb-0 shrink-0">
+          <div className="flex flex-row sm:flex-col gap-2.5 overflow-x-auto sm:overflow-y-auto sm:max-h-[520px] md:max-h-[560px] lg:max-h-[600px] xl:max-h-[660px] pb-1 sm:pb-0 shrink-0">
             {displayImages.map((img, idx) => (
               <div
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
-                className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 xl:w-24 xl:h-24 2xl:w-28 2xl:h-28 border-2 rounded-xl cursor-pointer overflow-hidden transition-all duration-200 ${
-                  currentIndex === idx ? "border-[#00b8a2] shadow-md" : "border-gray-200 hover:border-gray-400"
+                className={`shrink-0 w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 xl:w-22 xl:h-22 border-2 rounded-xl sm:rounded-2xl cursor-pointer overflow-hidden transition-all duration-200 bg-white ${
+                  currentIndex === idx ? "border-[#00b8a2] shadow-md ring-2 ring-[#00b8a2]/20" : "border-gray-200 hover:border-gray-400"
                 }`}
               >
-                <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-contain p-1" />
+                <img src={img} alt={`${product.name} ${idx + 1}`} className="w-full h-full object-contain p-1.5" />
               </div>
             ))}
           </div>
 
-          {/* Main Image */}
+          {/* Main Image (Cut-to-Cut Edge-to-Edge Large Display) */}
           <div
             ref={imageRef}
-            className="relative flex-1 rounded-2xl border border-gray-200 shadow-md overflow-hidden bg-gray-50 cursor-crosshair"
-            style={{ minHeight: "300px", height: "clamp(300px, 45vw, 620px)" }}
+            className="relative flex-1 w-full aspect-square max-w-full rounded-2xl sm:rounded-3xl border border-gray-200/80 shadow-md overflow-hidden bg-white cursor-crosshair flex items-center justify-center p-0"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -165,21 +164,16 @@ export default function ProductDetail({ product }: { product: ProductType }) {
             <img
               src={mainImage}
               alt={product.name}
-              className="w-full h-full contain "
+              className="w-full h-full object-contain pointer-events-none select-none transition-transform duration-300"
             />
-
-            {/* Zoom hint */}
-            {/* <div className="absolute bottom-3 right-3 bg-white/80 rounded-full p-1.5 shadow pointer-events-none">
-              <ZoomIn className="w-4 h-4 text-gray-400" />
-            </div> */}
 
             {/* Nav arrows */}
             {displayImages.length > 1 && (
               <>
-                <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow rounded-full p-2 transition">
+                <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} className="absolute left-2.5 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white shadow-md rounded-full p-2 transition hover:scale-105 active:scale-95">
                   <ChevronLeft className="w-5 h-5 text-[#1e1e4d]" />
                 </button>
-                <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white shadow rounded-full p-2 transition">
+                <button onClick={(e) => { e.stopPropagation(); handleNext(); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white shadow-md rounded-full p-2 transition hover:scale-105 active:scale-95">
                   <ChevronRight className="w-5 h-5 text-[#1e1e4d]" />
                 </button>
               </>
@@ -198,7 +192,7 @@ export default function ProductDetail({ product }: { product: ProductType }) {
           {/* Hover Zoom Window — fixed near cursor */}
           {hoverZoom && (
             <div
-              className="fixed z-50 w-[420px] h-[420px] lg:w-[500px] lg:h-[500px] rounded-2xl border border-gray-200 shadow-2xl overflow-hidden bg-white pointer-events-none"
+              className="fixed z-50 w-[420px] h-[420px] lg:w-[500px] lg:h-[500px] rounded-2xl border border-gray-200 shadow-2xl overflow-hidden bg-white pointer-events-none hidden md:block"
               style={{
                 top: cursorPos.y - 250,
                 left: cursorPos.x + 30,
@@ -207,10 +201,10 @@ export default function ProductDetail({ product }: { product: ProductType }) {
               <img
                 src={mainImage}
                 alt={product.name}
-                className="w-full h-full contain"
+                className="w-full h-full object-contain p-4"
                 style={{
                   transformOrigin: `${hoverPos.x}% ${hoverPos.y}%`,
-                  transform: "scale(3)",
+                  transform: "scale(2.5)",
                 }}
               />
             </div>

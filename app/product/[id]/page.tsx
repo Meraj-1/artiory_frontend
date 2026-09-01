@@ -126,7 +126,7 @@ const ProductSkeleton = () => {
             ))}
           </div>
           {/* Main Image Frame */}
-          <div className="w-full max-w-md h-[300px] sm:max-w-lg sm:h-[500px] md:max-w-xl md:h-[500px] lg:max-w-[400px] lg:h-[400px] bg-gray-200 rounded-md"></div>
+          <div className="w-full aspect-square max-w-full bg-gray-200 rounded-2xl sm:rounded-3xl"></div>
         </div>
 
         {/* Right Column (Info) */}

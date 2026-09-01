@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Star, Heart, ShoppingCart, SlidersHorizontal, ChevronDown, X, PackageSearch } from "lucide-react";
 import { Londrina_Solid } from "next/font/google";
@@ -58,7 +59,8 @@ const categoryGroups: { label: string;  items: string[] }[] = [
 
 
 
-export default function ProductListPage() {
+function ProductListContent() {
+  const searchParams = useSearchParams();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -80,6 +82,21 @@ export default function ProductListPage() {
     }
     return [];
   });
+
+  // Sync selectedCategories when URL searchParams change
+  useEffect(() => {
+    const catParam = searchParams.get("categories") || searchParams.get("category");
+    if (catParam) {
+      const parsed = catParam.split(",").map((c) => decodeURIComponent(c.trim())).filter(Boolean);
+      setSelectedCategories(parsed);
+      const matchingGroups = categoryGroups.filter(g => 
+        parsed.some(p => normalizeForMatch(p) === normalizeForMatch(g.label) || g.items.some(it => normalizeForMatch(it) === normalizeForMatch(p)))
+      ).map(g => g.label);
+      if (matchingGroups.length > 0) {
+        setOpenGroups(prev => Array.from(new Set([...prev, ...matchingGroups])));
+      }
+    }
+  }, [searchParams]);
 
   // Initialize sortOption from URL or sessionStorage
   const [sortOption, setSortOption] = useState<string>(() => {
@@ -316,34 +333,42 @@ export default function ProductListPage() {
   const normalizeForMatch = (str: string) => {
     if (!str) return "";
     let res = str.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (res === "artscraft" || res === "artsandcraft" || res === "artandcraft") {
+    if (res === "artscraft" || res === "artsandcraft" || res === "artandcraft" || res === "artsandcrafts") {
       res = "artcraft";
+    }
+    if (res === "drinkwarelunchware" || res === "drinkware" || res === "lunchware") {
+      res = "drinkwarelunchware";
     }
     return res;
   };
 
   let filteredProducts = products.filter((p) => {
     // 1. Category Filter
-    let catMatch = true;
-    if (selectedCategories.length > 0) {
-      const pCat = normalizeForMatch(p.category);
-      const pSub = normalizeForMatch(p.subCategory || "");
-      
-      catMatch = selectedCategories.some((selCatStr) => {
-        const selCat = normalizeForMatch(selCatStr);
-        const directCategoryMatch = pCat === selCat;
-        const directSubCategoryMatch = pSub === selCat;
-        
-        const group = categoryGroups.find((g) => normalizeForMatch(g.label) === selCat);
-        const groupMatch = group 
-          ? (pCat === selCat || group.items.some((item) => normalizeForMatch(item) === pSub)) 
-          : false;
-          
-        return directCategoryMatch || directSubCategoryMatch || groupMatch;
-      });
-    }
+    if (selectedCategories.length === 0) return true;
 
-    return catMatch;
+    const pCat = normalizeForMatch(p.category);
+    const pSub = normalizeForMatch(p.subCategory || "");
+    const pName = normalizeForMatch(p.name || "");
+
+    return selectedCategories.some((selCatStr) => {
+      const selCat = normalizeForMatch(selCatStr);
+      const directCategoryMatch = pCat === selCat || pCat.includes(selCat) || selCat.includes(pCat);
+      const directSubCategoryMatch = pSub === selCat || pSub.includes(selCat) || selCat.includes(pSub);
+
+      const group = categoryGroups.find((g) => normalizeForMatch(g.label) === selCat);
+      const groupMatch = group
+        ? (
+            pCat === selCat ||
+            pCat.includes(selCat) ||
+            group.items.some((item) => {
+              const nItem = normalizeForMatch(item);
+              return pSub === nItem || pSub.includes(nItem) || nItem.includes(pSub) || pName.includes(nItem);
+            })
+          )
+        : false;
+
+      return directCategoryMatch || directSubCategoryMatch || groupMatch;
+    });
   });
 
   if (sortOption === "Price: Low to High") filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
@@ -538,18 +563,16 @@ export default function ProductListPage() {
                 <option value="Price: High to Low">Price: High → Low</option>
               </select>
             </div>
-
             {/* Product Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-4 md:gap-5">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <div key={i} className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden bg-white">
                     <div className="aspect-square w-full bg-gray-100 animate-pulse" />
-                    <div className="p-3 flex flex-col gap-2">
-                      <div className="h-2.5 w-16 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-3.5 w-full bg-gray-200 rounded animate-pulse" />
-                      <div className="h-3 w-3/4 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mt-1" />
+                    <div className="p-2 sm:p-2.5 flex flex-col gap-1.5">
+                      <div className="h-2 w-14 bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3 w-full bg-gray-200 rounded animate-pulse" />
+                      <div className="h-3.5 w-16 bg-gray-200 rounded animate-pulse mt-1" />
                     </div>
                   </div>
                 ))}
@@ -564,7 +587,7 @@ export default function ProductListPage() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3.5 md:gap-4 lg:gap-5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
                 {filteredProducts.map((p) => {
                   const isWishlisted = wishlistState.items.some((item) => item.id === String(p.id));
                   const discount = p.oldPrice ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : null;
@@ -572,30 +595,30 @@ export default function ProductListPage() {
                     ? "Art & Craft" 
                     : p.category;
                   return (
-                    <div key={p.id} className="group bg-white rounded-2xl sm:rounded-3xl border border-gray-100/80 shadow-xs hover:shadow-md transition-all duration-300 overflow-hidden flex flex-col relative">
+                    <div key={p.id} className="group bg-white rounded-xl sm:rounded-2xl border border-gray-100/90 shadow-2xs hover:shadow-md hover:border-[#00b8a2]/30 transition-all duration-200 overflow-hidden flex flex-col justify-between relative">
                       {/* Image Box */}
                       <Link
                         href={`/product/${p.id}`}
                         onClick={handleProductNavigate}
-                        className="relative block aspect-square bg-gray-50/70 overflow-hidden p-2"
+                        className="relative block aspect-square bg-[#f8fafc] overflow-hidden p-2 sm:p-2.5"
                       >
                         {/* Badges */}
-                        <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                        <div className="absolute top-1.5 left-1.5 z-10 flex flex-col gap-1">
                           {p.isSale && (
-                            <span className="bg-rose-500 text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">SALE</span>
+                            <span className="bg-rose-500 text-white text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs">SALE</span>
                           )}
                           {discount !== null && discount > 0 && (
-                            <span className="bg-[#00b8a2] text-white text-[9px] sm:text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs">-{discount}%</span>
+                            <span className="bg-[#00b8a2] text-white text-[8px] sm:text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-xs">-{discount}%</span>
                           )}
                         </div>
 
-                        {/* Wishlist Button (Always visible on mobile/tablet, subtle hover on desktop) */}
+                        {/* Wishlist Button */}
                         <button
-                          className="absolute top-2 right-2 z-10 w-7 h-7 sm:w-8 sm:h-8 bg-white/95 backdrop-blur-xs rounded-full shadow-xs border border-gray-100 flex items-center justify-center hover:scale-110 active:scale-95 transition"
+                          className="absolute top-1.5 right-1.5 z-10 w-6 h-6 sm:w-7 sm:h-7 bg-white/90 backdrop-blur-xs rounded-full shadow-xs border border-gray-100 flex items-center justify-center hover:scale-110 active:scale-95 transition"
                           onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleWishlist(p); }}
                           aria-label="Add to Wishlist"
                         >
-                          <Heart className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${isWishlisted ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-400"}`} />
+                          <Heart className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${isWishlisted ? "fill-[#00b8a2] text-[#00b8a2]" : "text-gray-400"}`} />
                         </button>
 
                         <img
@@ -607,34 +630,31 @@ export default function ProductListPage() {
                       </Link>
 
                       {/* Card Body */}
-                      <div className="p-2.5 sm:p-3.5 flex flex-col gap-1 sm:gap-1.5 flex-1 justify-between">
+                      <div className="p-2 sm:p-2.5 flex flex-col justify-between flex-1 gap-1">
                         <div>
-                          <span className="text-[9px] sm:text-[10px] text-[#00b8a2] font-black uppercase tracking-wider block truncate">
+                          <span className="text-[9px] sm:text-[9.5px] text-[#00b8a2] font-black uppercase tracking-wider block truncate">
                             {displayCategory}{p.subCategory ? ` · ${p.subCategory}` : ""}
                           </span>
                           <Link href={`/product/${p.id}`} onClick={handleProductNavigate}>
-                            <h3 className="text-xs sm:text-sm font-bold text-[#2e306a] leading-tight line-clamp-2 hover:text-[#00b8a2] transition-colors mt-0.5">
+                            <h3 className="text-[11px] sm:text-xs font-bold text-[#2e306a] leading-tight line-clamp-1 hover:text-[#00b8a2] transition-colors mt-0.5" title={p.name}>
                               {p.name}
                             </h3>
                           </Link>
-                          {p.shortDescription && (
-                            <p className="text-[11px] text-gray-400 line-clamp-1 mt-0.5 hidden sm:block">{p.shortDescription}</p>
-                          )}
                         </div>
 
                         {/* Price & Action Row */}
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2 gap-1">
+                        <div className="flex items-center justify-between pt-1.5 border-t border-gray-100 mt-1 gap-1">
                           <div className="flex items-baseline gap-1">
-                            <span className={`${londrina.className} text-base sm:text-lg font-bold text-[#00b8a2]`}>₹{p.price}</span>
+                            <span className={`${londrina.className} text-sm sm:text-base font-bold text-[#00b8a2]`}>₹{p.price}</span>
                             {p.oldPrice && p.oldPrice > p.price ? (
-                              <span className={`${londrina.className} text-xs text-gray-400 line-through`}>₹{p.oldPrice}</span>
+                              <span className={`${londrina.className} text-[10px] sm:text-xs text-gray-400 line-through`}>₹{p.oldPrice}</span>
                             ) : null}
                           </div>
 
                           {(() => {
                             const cartItem = cartItems.find((item) => item.id === String(p.id));
                             return cartItem ? (
-                              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-xl p-0.5 shadow-xs">
+                              <div className="flex items-center bg-gray-50 border border-gray-200 rounded-lg p-0.5 shadow-xs">
                                 <button
                                   onClick={() => {
                                     if (cartItem.quantity > 1) {
@@ -647,11 +667,11 @@ export default function ProductListPage() {
                                       toast.info(`${p.name} removed from cart`, { position: "bottom-right", autoClose: 800 });
                                     }
                                   }}
-                                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 hover:text-red-500 hover:bg-gray-100 rounded-lg text-sm font-black transition-colors"
+                                  className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 hover:text-red-500 hover:bg-gray-100 rounded text-xs font-black transition-colors"
                                 >
                                   -
                                 </button>
-                                <span className="w-6 sm:w-7 text-center font-black text-xs text-[#2e306a]">
+                                <span className="w-5 sm:w-6 text-center font-black text-[11px] text-[#2e306a]">
                                   {cartItem.quantity}
                                 </span>
                                 <button
@@ -667,7 +687,7 @@ export default function ProductListPage() {
                                     });
                                   }}
                                   disabled={cartItem.quantity >= (p.stockQuantity ?? p.stock ?? 999)}
-                                  className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-gray-700 hover:text-[#00b8a2] hover:bg-gray-100 disabled:opacity-30 rounded-lg text-sm font-black transition-colors"
+                                  className="w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-gray-700 hover:text-[#00b8a2] hover:bg-gray-100 disabled:opacity-30 rounded text-xs font-black transition-colors"
                                 >
                                   +
                                 </button>
@@ -675,7 +695,7 @@ export default function ProductListPage() {
                             ) : (
                               <button
                                 onClick={() => handleAddToCart(p)}
-                                className="px-2.5 sm:px-3 py-1.5 bg-[#00b8a2] hover:bg-[#009e8c] text-white rounded-xl text-[11px] sm:text-xs font-bold transition-all active:scale-95 shadow-xs flex items-center gap-1 shrink-0"
+                                className="px-2 sm:px-2.5 py-1 bg-[#00b8a2]/10 hover:bg-[#00b8a2] text-[#00b8a2] hover:text-white rounded-lg text-[10px] sm:text-xs font-bold flex items-center gap-1 transition-all duration-200 cursor-pointer"
                               >
                                 <ShoppingCart className="w-3 h-3" />
                                 <span>Add</span>
@@ -719,5 +739,17 @@ export default function ProductListPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProductListPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#00b8a2] border-t-transparent"></div>
+      </div>
+    }>
+      <ProductListContent />
+    </Suspense>
   );
 }

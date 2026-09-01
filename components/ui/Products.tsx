@@ -89,7 +89,7 @@ const Products: React.FC = () => {
     fetchProducts();
   }, []);
 
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
   const [page, setPage] = useState(1);
 
   // Filter products by selected category
@@ -245,14 +245,14 @@ const Products: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-5 w-full max-w-7xl mx-auto px-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-3.5 w-full max-w-7xl mx-auto px-3 sm:px-4">
         {paginatedProducts.map((product) => (
           <div key={product.id} className="w-full flex justify-center">
             <Link
               href={`/product/${product.id}`}
               className="w-full flex justify-center"
             >
-              <div className="group relative flex flex-col w-full rounded-2xl bg-white border border-[#8bd2c9] overflow-hidden transition-all duration-300 hover:shadow-lg">
+              <div className="group relative flex flex-col justify-between w-full rounded-xl sm:rounded-2xl bg-white border border-gray-100/90 shadow-2xs hover:shadow-md hover:border-[#00b8a2]/30 overflow-hidden transition-all duration-200">
 
                 {/* Badges */}
                 <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
