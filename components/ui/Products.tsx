@@ -89,7 +89,7 @@ const Products: React.FC = () => {
     fetchProducts();
   }, []);
 
-  const itemsPerPage = 10;
+  const itemsPerPage = 8;
   const [page, setPage] = useState(1);
 
   // Filter products by selected category
@@ -245,7 +245,7 @@ const Products: React.FC = () => {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-3.5 w-full max-w-7xl mx-auto px-3 sm:px-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 sm:gap-3.5 md:gap-4 w-full max-w-7xl mx-auto px-3 sm:px-4">
         {paginatedProducts.map((product) => (
           <div key={product.id} className="w-full flex justify-center">
             <Link

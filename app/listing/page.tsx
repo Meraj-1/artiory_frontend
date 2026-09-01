@@ -233,7 +233,17 @@ function ProductListContent() {
             })
           : [];
 
-        setProducts(finalProducts);
+        // Dynamic Fisher-Yates shuffle for diverse All Products mix
+        const shuffleArray = <T,>(arr: T[]): T[] => {
+          const shuffled = [...arr];
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+          }
+          return shuffled;
+        };
+
+        setProducts(shuffleArray(finalProducts));
       } catch (error) {
         console.error("Failed to load products", error);
         setProducts([]);
@@ -323,11 +333,29 @@ function ProductListContent() {
     );
   };
 
+  const shuffleList = <T,>(arr: T[]): T[] => {
+    const shuffled = [...arr];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
   const clearFilters = () => {
     setSelectedCategories([]);
     if (typeof window !== "undefined") {
       sessionStorage.removeItem("artiory_selected_categories");
     }
+    setProducts((prev) => shuffleList(prev));
+  };
+
+  const handleAllProducts = () => {
+    setSelectedCategories([]);
+    if (typeof window !== "undefined") {
+      sessionStorage.removeItem("artiory_selected_categories");
+    }
+    setProducts((prev) => shuffleList(prev));
   };
 
   const normalizeForMatch = (str: string) => {
@@ -388,7 +416,7 @@ function ProductListContent() {
             className={`flex items-center gap-2 w-full text-left px-3 py-2 rounded-xl text-sm transition-all mb-1 cursor-pointer ${
               selectedCategories.length === 0 ? "bg-[#00b8a2] text-white font-medium shadow-sm" : "hover:bg-gray-50 text-gray-600"
             }`}
-            onClick={() => setSelectedCategories([])}
+            onClick={handleAllProducts}
           >
              All Products
           </button>
@@ -509,16 +537,16 @@ function ProductListContent() {
       <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-5 sm:py-7">
         <div className="flex gap-6 lg:gap-7">
 
-          {/* Desktop Sidebar */}
-          <aside className="hidden lg:flex flex-col gap-4 w-60 shrink-0">
+          {/* Desktop Sidebar (Sticky on Screen) */}
+          <aside className="hidden lg:flex flex-col gap-4 w-60 shrink-0 sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto pr-1 select-none self-start">
             <SidebarFilters />
           </aside>
 
           {/* Main Content */}
           <main className="flex-1 min-w-0">
 
-            {/* Toolbar */}
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-xs px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between mb-4 sm:mb-5 gap-2 flex-wrap">
+            {/* Toolbar (Sticky under Header) */}
+            <div className="bg-white/95 backdrop-blur-md rounded-2xl border border-gray-100 shadow-xs px-3 sm:px-4 py-2.5 sm:py-3 flex items-center justify-between mb-4 sm:mb-5 gap-2 flex-wrap sticky top-16 sm:top-20 z-20">
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Mobile filter trigger */}
                 <button
@@ -565,8 +593,8 @@ function ProductListContent() {
             </div>
             {/* Product Grid */}
             {loading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
-                {Array.from({ length: 10 }).map((_, i) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-3.5">
+                {Array.from({ length: 8 }).map((_, i) => (
                   <div key={i} className="rounded-xl sm:rounded-2xl border border-gray-100 overflow-hidden bg-white">
                     <div className="aspect-square w-full bg-gray-100 animate-pulse" />
                     <div className="p-2 sm:p-2.5 flex flex-col gap-1.5">
@@ -587,7 +615,7 @@ function ProductListContent() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-2.5 md:gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 2xl:grid-cols-4 gap-2.5 sm:gap-3 md:gap-3.5">
                 {filteredProducts.map((p) => {
                   const isWishlisted = wishlistState.items.some((item) => item.id === String(p.id));
                   const discount = p.oldPrice ? Math.round(((p.oldPrice - p.price) / p.oldPrice) * 100) : null;

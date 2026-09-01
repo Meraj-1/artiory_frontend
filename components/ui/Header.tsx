@@ -101,7 +101,7 @@ const Header: React.FC = () => {
 
   return (
     <>
-      <header className="p-1 sticky top-0 bg-white z-50">
+      <header className="p-1 sticky top-0 bg-white/95 backdrop-blur-md z-50 border-b border-gray-100 shadow-2xs">
         {menuOpenRef.current && (
           <div
             className="fixed inset-0 bg-black/70 z-40 transition-opacity duration-500"
@@ -273,7 +273,6 @@ const Header: React.FC = () => {
                         onClick={() => setHoverOpen(false)}
                         className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
                       >
-                        <span>📦</span>
                         <span>My Orders</span>
                       </Link>
 
@@ -282,7 +281,6 @@ const Header: React.FC = () => {
                         onClick={() => setHoverOpen(false)}
                         className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
                       >
-                        <span>📍</span>
                         <span>Saved Addresses</span>
                       </Link>
 
@@ -291,7 +289,6 @@ const Header: React.FC = () => {
                         onClick={() => setHoverOpen(false)}
                         className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
                       >
-                        <span>👤</span>
                         <span>Account Profile</span>
                       </Link>
 
@@ -300,7 +297,6 @@ const Header: React.FC = () => {
                         onClick={() => setHoverOpen(false)}
                         className="w-full text-left px-3 py-2 text-slate-800 hover:bg-slate-100 hover:text-slate-950 rounded-xl block transition flex items-center gap-2"
                       >
-                        <span>❤️</span>
                         <span>My Wishlist</span>
                       </Link>
 
@@ -309,7 +305,6 @@ const Header: React.FC = () => {
                           onClick={onSignOut}
                           className="w-full text-left px-3 py-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700 rounded-xl block transition font-bold flex items-center gap-2"
                         >
-                          <span>🚪</span>
                           <span>Logout</span>
                         </button>
                       </div>
