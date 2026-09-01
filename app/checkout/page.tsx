@@ -286,17 +286,20 @@ export default function CheckoutPage() {
         formEl.method = "POST";
         formEl.action = sabpaisaUrl;
 
-        const clientCodeInput = document.createElement("input");
-        clientCodeInput.type = "hidden";
-        clientCodeInput.name = "clientCode";
-        clientCodeInput.value = clientCode;
-        formEl.appendChild(clientCodeInput);
+        const addField = (name: string, value: string) => {
+          if (!value) return;
+          const input = document.createElement("input");
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          formEl.appendChild(input);
+        };
 
-        const encDataInput = document.createElement("input");
-        encDataInput.type = "hidden";
-        encDataInput.name = "encData";
-        encDataInput.value = encData;
-        formEl.appendChild(encDataInput);
+        addField("clientCode", clientCode);
+        addField("clientcode", clientCode);
+        addField("client_code", clientCode);
+        addField("encData", encData);
+        addField("encdata", encData);
 
         document.body.appendChild(formEl);
         formEl.submit();
