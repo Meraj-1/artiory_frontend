@@ -35,8 +35,9 @@ function signJwtHS256(payload: object, secret: string, expiresInMinutes = 5): st
   return `${signatureInput}.${encodedSignature}`;
 }
 
-function getBackendToken(userId: string) {
-  return signJwtHS256({ id: userId }, process.env.JWT_SECRET || "fallback_secret", 1440);
+function getBackendToken(userId: string, email?: string, name?: string) {
+  const secret = process.env.JWT_SECRET || "werfuh3482fnrf8932rf_prod_secure_key";
+  return signJwtHS256({ id: userId, email: email || "", name: name || "" }, secret, 1440);
 }
 
 export async function POST(req: NextRequest) {
@@ -47,7 +48,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const token = getBackendToken(userId);
+    const token = getBackendToken(userId, session.user.email || undefined, session.user.name || undefined);
     const body = await req.json();
 
     const payload = {
