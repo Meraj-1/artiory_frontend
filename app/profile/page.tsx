@@ -136,7 +136,8 @@ function ProfileContent() {
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data) ? data : data?.data || [];
-        setOrders(list);
+        const confirmedOrders = list.filter((o: any) => o.status === "Paid" || o.status === "Shipped" || o.status === "Delivered" || o.status === "In-Transit");
+        setOrders(confirmedOrders);
       } else {
         setOrdersError("Unable to load orders. Please try again.");
       }

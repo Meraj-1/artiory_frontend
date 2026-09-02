@@ -640,66 +640,74 @@ export default function CheckoutPage() {
             )}
           </div>
 
-          {/* Payment Section */}
-          <div className="border border-gray-300  rounded-xl p-8 shadow-md">
-            <h2 className={`${londrina.className} text-2xl font-semibold mb-4`}>Payment</h2>
-            <p className="text-gray-500 mb-4">All transactions are secure and encrypted.</p>
-
-            <div className="flex items-center gap-4 mb-4">
-              <input
-                type="radio"
-                checked={form.paymentMethod === "sabpaisa"}
-                onChange={() => setForm({ ...form, paymentMethod: "sabpaisa" })}
-              />
-              <span className="font-medium text-[#2e306a]">SabPaisa (UPI, Cards, NetBanking)</span>
-              <span className="text-xs bg-[#e0fcf4] text-[#00b8a2] px-2 py-0.5 rounded font-semibold ml-2">Popular</span>
+          {/* Payment Section - 100% Online Payment */}
+          <div className="border border-gray-200/90 rounded-2xl p-6 sm:p-8 bg-white shadow-xs">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className={`${londrina.className} text-2xl font-bold text-[#2e306a]`}>Payment Method</h2>
+              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
+                🔒 100% Secure & Encrypted
+              </span>
             </div>
+            <p className="text-xs text-gray-500 mb-5">Pay online securely via UPI (Google Pay, PhonePe, Paytm, BHIM, QR), Credit/Debit Cards, or NetBanking.</p>
 
-            <div className="flex items-center gap-4 mb-4">
-              <input
-                type="radio"
-                checked={form.paymentMethod === "card"}
-                onChange={() => setForm({ ...form, paymentMethod: "card" })}
-              />
-              <span className="font-medium">Credit Card</span>
-              <div className="flex gap-2 ml-2">
-                <Image src="/visa.png" alt="Visa" width={36} height={24} />
-                <Image src="/mastercard.png" alt="Mastercard" width={36} height={24} />
-              </div>
-            </div>
-
-            {form.paymentMethod === "card" && (
-              <div className="grid grid-cols-1 gap-4">
-                <input placeholder="Card Number" className="border border-gray-300 rounded-lg p-3 w-full" />
-                <input placeholder="Name on Card" className="border border-gray-300 rounded-lg p-3 w-full" />
-                <div className="grid grid-cols-2 gap-4">
-                  <input placeholder="MM/YY" className="border border-gray-300 rounded-lg p-3 w-full" />
-                  <input placeholder="CVC" className="border border-gray-300 rounded-lg p-3 w-full" />
+            {/* Online Payment Card (Pre-selected) */}
+            <div className="relative flex flex-col p-4 sm:p-5 rounded-xl border-2 border-[#00b8a2] bg-[#f0fdfa] shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full border-2 border-[#00b8a2] bg-[#00b8a2] flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-white" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm sm:text-base font-bold text-[#2e306a]">
+                        Online Payment Gateway
+                      </span>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        Fast & Secure
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      Instant UPI (PhonePe, GPay, Paytm, QR), All Bank Cards & NetBanking
+                    </p>
+                  </div>
                 </div>
               </div>
-            )}
 
-            <div className="flex items-center gap-2 mt-4">
-              <input type="checkbox" defaultChecked />
-              <span className="text-sm">Use shipping address as billing address</span>
+              {/* Supported badges */}
+              <div className="flex items-center gap-2 mt-3 pt-3 border-t border-emerald-100 flex-wrap">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                  ⚡ Instant UPI / QR
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                  💳 Debit / Credit Cards
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
+                  🏦 50+ NetBanking
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-2">
-              <input
-                type="radio"
-                checked={form.paymentMethod === "paypal"}
-                onChange={() => setForm({ ...form, paymentMethod: "paypal" })}
-              />
-              <span className="font-medium">PayPal</span>
-            </div>
-
+            {/* Place Order & Pay Button */}
             <button 
               onClick={handlePlaceOrder}
               disabled={placing}
-              className="bg-[#00b8a2] text-white font-semibold rounded-lg w-full mt-6 py-3 hover:bg-[#009e8b] transition disabled:opacity-50"
+              className="bg-[#00b8a2] hover:bg-[#009e8b] text-white font-bold text-base rounded-xl w-full mt-6 py-3.5 shadow-md shadow-[#00b8a2]/20 transition-all duration-200 active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
             >
-              {placing ? "Processing..." : "Place Order"}
+              {placing ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                  <span>Redirecting to Payment Gateway...</span>
+                </>
+              ) : (
+                <>
+                  <span>🔒 Pay ₹{total} via Gateway</span>
+                </>
+              )}
             </button>
+
+            <p className="text-center text-[11px] text-gray-400 mt-3">
+              By placing this order, you agree to Artiory's Terms of Service & Privacy Policy.
+            </p>
           </div>
         </div>
 
