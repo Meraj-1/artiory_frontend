@@ -1,144 +1,119 @@
-// import React from 'react'
-// import Image from 'next/image'
-// import { Londrina_Solid } from "next/font/google";
-// import { Readex_Pro } from "next/font/google";
-// import { Poppins } from "next/font/google";
-
-// const londrina = Londrina_Solid({
-//   weight: ["100", "300", "400", "900"], // Choose the weights you need
-//   subsets: ["latin"], // Required
-//   display: "swap", // Avoid layout shift
-// });
-
-// const readex = Readex_Pro({
-//   weight: ["200", "300", "400", "500", "600", "700"], // choose the weights you need
-//   subsets: ["latin"],
-//   display: "swap",
-// });
-
-// const poppins = Poppins({
-//   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-//   subsets: ["latin"],
-//   style: ["normal", "italic"], // optional if you want italic support
-//   display: "swap",
-// })
-
-
-
-// const Hero = () => {
-//   return (
-//     <section className='lg:h-[700px] h-3/5 sm:h-4/5 bg-[#00b8a2] md:flex md:justify-center  text-white '>
-//       <div className="container md:flex md:flex-row items-center pt-10">
-//         <div className='flex md:flex-1 justify-center flex-col  items-center transform md:-translate-y-20'>
-//           <h1 className={`${londrina.className} text-5xl m-2 md:m-0 lg:text-[5rem] xl:text-[5.4rem] flex`}>Inspired by Childhood.<br />Designed for Every Day.</h1>
-//           <p
-//             className={`md:text-md text-sm mt-4 text-center md:tracking-[0.2em] xl:text-[1rem] md:font-medium md:mt-10 ${readex.className}`}
-//           >From school essentials and creative supplies to premium gifts and everyday accessories, Artiory brings thoughtfully curated products that make every childhood moment memorable.</p>
-//           <div className={`md:mt-10`}>
-//             <button className={`bg-white text-2xl font-extrabold cursor-pointer p-10 text-[#00b8a2] px-6 py-2 rounded-full mt-4 ${poppins.className}  hover:bg-gray-200 transition`}>
-//               Shop Now
-//             </button>
-//           </div>
-//         </div>
-//         <div className='flex md:flex-1 items-center justify-center mt-4'>
-//           <div className="relative w-full h-[300px] sm:h-[400px] md:h-[550px] lg:h-[800px]">
-//             <Image
-//               src="/hero.png"
-//               alt="hero image"
-//               fill
-//               className="object-cover object-top-right lg:object-cover transform -translate-y-6 sm:-translate-y-10 md:-translate-y-14 lg:translate-y-0 -translate-x-12 sm:-translate-x-14 md:-translate-x-1 lg:translate-x-0"
-//               sizes="(max-width: 640px) 150vw,
-//                       (max-width: 1024px) 50vw,
-//                        100vw" priority
-//             />
-//           </div>
-//         </div>
-//       </div>
-//     </section>
-//   )
-// }
-
-// export default Hero
-
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const slides = [
   {
-    desktop: "/hero1_Desktop.jpeg",
-    tab: "/hero1_Tab.jpeg",
+    id: 1,
+    title: "Artiory Banner 1",
+    desktop: "/Banner1_web.jpeg",
+    mobile: "/Banner1_mobile.jpeg",
+    link: "/listing",
   },
   {
-    desktop: "/hero2_Desktop.jpeg",
-    tab: "/hero2_Tab.jpeg",
+    id: 2,
+    title: "Artiory Banner 2",
+    desktop: "/Banner2_web.jpeg",
+    mobile: "/Banner2_mobile.jpeg",
+    link: "/listing",
   },
 ];
 
-const Hero = () => {
+const Hero: React.FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
+  const nextSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
   }, []);
 
+  const prevSlide = useCallback(() => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  }, []);
+
+  // Auto-play sliding animation every 4.5 seconds
+  useEffect(() => {
+    if (isHovered) return;
+    const interval = setInterval(() => {
+      nextSlide();
+    }, 4500);
+
+    return () => clearInterval(interval);
+  }, [nextSlide, isHovered]);
+
+  // Touch swipe support for mobile/tablet
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.targetTouches[0].clientX;
+    touchEndXRef.current = null;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndXRef.current = e.targetTouches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartXRef.current === null || touchEndXRef.current === null) return;
+    const distance = touchStartXRef.current - touchEndXRef.current;
+    if (distance > 50) {
+      nextSlide();
+    } else if (distance < -50) {
+      prevSlide();
+    }
+    touchStartXRef.current = null;
+    touchEndXRef.current = null;
+  };
+
   return (
-    <section className="relative w-full overflow-hidden">
-      {/* Carousel */}
-      <div className="relative w-full h-[80vh] md-[90vh] lg:h-[80vh] xl:h-[90vh]">
+    <section
+      className="relative w-full overflow-hidden bg-slate-900 select-none"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      aria-label="Promotional Hero Banners"
+    >
+      {/* Horizontal Sliding Track (Smooth horizontal slide only, NO zoom in/out) */}
+      <div
+        className="flex w-full transition-transform duration-700 ease-in-out will-change-transform"
+        style={{ transform: `translateX(-${currentSlide * 100}%)` }}
+      >
         {slides.map((slide, index) => (
-          <div
-            key={index}
-            className={`absolute inset-0 transition-all duration-1000 ease-in-out ${
-              currentSlide === index ? "opacity-100" : "opacity-0"
-            }`}
-          >
-            {/* Desktop Banner (Large Screens: 1024px and above) */}
-            <div className="hidden lg:block relative w-full h-full">
-              <Image
-                src={slide.desktop}
-                alt={`Artiory Banner ${index + 1}`}
-                fill
-                priority={index === 0}
-                className="object-cover object-center"
-                sizes="100vw"
-              />
-            </div>
+          <div key={slide.id} className="w-full flex-shrink-0 relative">
+            <Link
+              href={slide.link}
+              className="block w-full focus:outline-none"
+              tabIndex={currentSlide === index ? 0 : -1}
+            >
+              {/* Desktop / Laptop Web Banner (16:9 ratio matching 1280x720) */}
+              <div className="hidden md:block relative w-full aspect-[16/9] max-h-[85vh]">
+                <Image
+                  src={slide.desktop}
+                  alt={slide.title}
+                  fill
+                  priority={index === 0}
+                  className="object-cover object-center"
+                  sizes="100vw"
+                />
+              </div>
 
-            {/* Mobile/Tab Banner (Small/Medium Screens: below 1024px) */}
-            <div className="block lg:hidden relative w-full h-full">
-              <Image
-                src={slide.tab}
-                alt={`Artiory Banner ${index + 1} Mobile/Tab`}
-                fill
-                priority={index === 0}
-                className="object-cover object-center"
-                sizes="100vw"
-              />
-            </div>
+              {/* Mobile View Banner (Taller height for prominent, full-impact view) */}
+              <div className="block md:hidden relative w-full h-[75vh] min-h-[540px] max-h-[750px]">
+                <Image
+                  src={slide.mobile}
+                  alt={`${slide.title} Mobile`}
+                  fill
+                  priority={index === 0}
+                  className="object-cover object-center"
+                  sizes="100vw"
+                />
+              </div>
+            </Link>
           </div>
-        ))}
-      </div>
-
-      {/* Dots */}
-      <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-        {slides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => setCurrentSlide(index)}
-            aria-label={`Go to slide ${index + 1}`}
-            className={`h-2.5 rounded-full transition-all duration-300 ${
-              currentSlide === index
-                ? "w-8 bg-white"
-                : "w-2.5 bg-white/50"
-            }`}
-          />
         ))}
       </div>
     </section>

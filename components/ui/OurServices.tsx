@@ -30,8 +30,7 @@ const services = [
 const OurServices = () => {
     return (
         <section className={`${poppins.className} relative z-10 mx-auto`}>
-            <WaveDivider bgColor="#e5fef0" className="-mt-24" flip />
-            <div className="bg-[#e5fef0] -mt-2 py-12 px-6">
+            <div className="bg-[#e5fef0] py-12 px-6">
                 <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                     {services.map(({ icon: Icon, title, desc }) => (
                         <div key={title} className="flex items-start gap-4">
