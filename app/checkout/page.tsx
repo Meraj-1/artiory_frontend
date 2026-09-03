@@ -45,13 +45,14 @@ export default function CheckoutPage() {
   const [pincodeChecking, setPincodeChecking] = useState(false);
   const [pincodeStatus, setPincodeStatus] = useState<"serviceable" | "unserviceable" | "">("");
   const [pincodeMessage, setPincodeMessage] = useState("");
-  const [shipping, setShipping] = useState<number>(149);
+  const [shipping, setShipping] = useState<number | null>(null);
 
   const checkPincode = async (zipCode: string) => {
     const cleaned = zipCode.replace(/\D/g, "");
     if (!cleaned || cleaned.length !== 6) {
       setPincodeStatus("");
       setPincodeMessage("");
+      setShipping(null);
       return;
     }
 
@@ -83,7 +84,7 @@ export default function CheckoutPage() {
       });
       const chargeJson = await chargeRes.json();
       if (chargeRes.ok && chargeJson.success && chargeJson.serviceable !== false) {
-        const liveShippingRate = Number(chargeJson.shippingCharge || 65);
+        const liveShippingRate = Number(chargeJson.shippingCharge || 0);
         setShipping(liveShippingRate);
         setPincodeStatus("serviceable");
         const courierNote = chargeJson.courierName ? ` via ${chargeJson.courierName}` : "";
@@ -91,12 +92,14 @@ export default function CheckoutPage() {
         const eddNote = chargeJson.edd ? ` • Est. Delivery: ${chargeJson.edd}` : "";
         setPincodeMessage(`✅ Delivery available${courierNote}${weightNote} • Shipping: ₹${liveShippingRate}${eddNote}`);
       } else if (chargeJson.serviceable === false) {
+        setShipping(null);
         setPincodeStatus("unserviceable");
         setPincodeMessage(`❌ ${chargeJson.message || "Sorry, delivery is not available for this pincode."}`);
       } else {
-        setShipping(65);
+        const fallbackRate = Number(chargeJson.shippingCharge || 65);
+        setShipping(fallbackRate);
         setPincodeStatus("serviceable");
-        setPincodeMessage("✅ Delivery available • Standard Shipping: ₹65");
+        setPincodeMessage(`✅ Delivery available • Shipping: ₹${fallbackRate}`);
       }
     } catch (err) {
       console.error("Pincode rate check error:", err);
@@ -116,7 +119,8 @@ export default function CheckoutPage() {
 
   const subtotal = getCartTotal();
   const discountAmount = appliedCoupon ? appliedCoupon.discountAmount : 0;
-  const total = Math.max(0, subtotal + shipping - discountAmount);
+  const shippingCost = shipping ?? 0;
+  const total = Math.max(0, subtotal + shippingCost - discountAmount);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -229,6 +233,8 @@ export default function CheckoutPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
+            firstName: form.firstName.trim(),
+            lastName: form.lastName.trim(),
             home: form.home.trim(),
             street: form.address.trim(),
             landmark: form.landmark?.trim() || "",
@@ -236,7 +242,10 @@ export default function CheckoutPage() {
             state: form.state.trim(),
             postalCode: cleanedZip,
             phone: cleanedPhone.slice(-10),
+            alternatePhone: form.alternatePhone?.trim() ? form.alternatePhone.replace(/\D/g, "").slice(-10) : "",
+            email: form.email.trim(),
             type: form.addressType || "Home",
+            country: "India",
             isDefault: savedAddresses.length === 0,
           }),
         }).catch((e) => console.error("Address auto-save notice:", e));
@@ -353,6 +362,9 @@ export default function CheckoutPage() {
     if (selected) {
       setForm((prev) => ({
         ...prev,
+        firstName: selected.firstName || prev.firstName || "",
+        lastName: selected.lastName || prev.lastName || "",
+        email: selected.email || prev.email || "",
         home: selected.home || "",
         address: selected.street || selected.address || "",
         landmark: selected.landmark || "",
@@ -645,10 +657,10 @@ export default function CheckoutPage() {
             <div className="flex items-center justify-between mb-2">
               <h2 className={`${londrina.className} text-2xl font-bold text-[#2e306a]`}>Payment Method</h2>
               <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100 flex items-center gap-1">
-                🔒 100% Secure & Encrypted
+                🔒 100% Secure & Verified
               </span>
             </div>
-            <p className="text-xs text-gray-500 mb-5">Pay online securely via UPI (Google Pay, PhonePe, Paytm, BHIM, QR), Credit/Debit Cards, or NetBanking.</p>
+            <p className="text-xs text-gray-500 mb-5">Pay instantly and securely using any UPI App (GPay, PhonePe, Paytm, BHIM) by scanning the QR code.</p>
 
             {/* Online Payment Card (Pre-selected) */}
             <div className="relative flex flex-col p-4 sm:p-5 rounded-xl border-2 border-[#00b8a2] bg-[#f0fdfa] shadow-xs">
@@ -660,14 +672,14 @@ export default function CheckoutPage() {
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm sm:text-base font-bold text-[#2e306a]">
-                        Online Payment Gateway
+                        Instant UPI & QR Payment
                       </span>
                       <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        Fast & Secure
+                        Fast & Direct
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      Instant UPI (PhonePe, GPay, Paytm, QR), All Bank Cards & NetBanking
+                    <p className="text-xs text-gray-500 mt-1">
+                      Scan QR code with Google Pay, PhonePe, Paytm, Cred or any UPI app for zero-delay instant confirmation.
                     </p>
                   </div>
                 </div>
@@ -676,13 +688,13 @@ export default function CheckoutPage() {
               {/* Supported badges */}
               <div className="flex items-center gap-2 mt-3 pt-3 border-t border-emerald-100 flex-wrap">
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                  ⚡ Instant UPI / QR
+                  📱 Scan & Pay QR
                 </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                  💳 Debit / Credit Cards
+                  ⚡ PhonePe / Google Pay / Paytm
                 </span>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-700 bg-white border border-gray-200 px-2.5 py-1 rounded-lg shadow-2xs">
-                  🏦 50+ NetBanking
+                  🛡️ Instant Order Verification
                 </span>
               </div>
             </div>
@@ -696,11 +708,11 @@ export default function CheckoutPage() {
               {placing ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
-                  <span>Redirecting to Payment Gateway...</span>
+                  <span>Generating Payment QR...</span>
                 </>
               ) : (
                 <>
-                  <span>🔒 Pay ₹{total} via Gateway</span>
+                  <span>📱 Scan & Pay ₹{total.toFixed(2)} via UPI QR</span>
                 </>
               )}
             </button>
@@ -792,13 +804,21 @@ export default function CheckoutPage() {
                 <span>-&#8377;{discountAmount}</span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span>Shipping Charges (Flat Rate)</span>
-              <span className="font-semibold text-gray-800">&#8377;{shipping.toFixed(2)}</span>
+            <div className="flex justify-between items-center">
+              <span>Shipping Charges</span>
+              <span className="font-semibold text-gray-800">
+                {shipping !== null ? (
+                  `₹${shipping.toFixed(2)}`
+                ) : (
+                  <span className="text-xs font-normal text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
+                    Enter PIN Code to calculate
+                  </span>
+                )}
+              </span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-dashed border-gray-300 pt-2">
               <span>Total</span>
-              <span>&#8377;{total}</span>
+              <span>&#8377;{total.toFixed(2)}</span>
             </div>
           </div>
         </div>

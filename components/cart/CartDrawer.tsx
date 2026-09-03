@@ -95,7 +95,11 @@ export default function CartPage() {
   const handleDecrement = (id: string) => {
     const item = cart.items.find((i) => i.id === id);
     if (!item) return;
-    dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: Math.max(item.quantity - 1, 1) } });
+    if (item.quantity <= 1) {
+      dispatch({ type: "REMOVE_ITEM", payload: id });
+    } else {
+      dispatch({ type: "UPDATE_QUANTITY", payload: { id, quantity: item.quantity - 1 } });
+    }
   };
 
   return (

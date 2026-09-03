@@ -529,7 +529,6 @@ function ProductListContent() {
           </p>
           <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
             <h1 className={`${londrina.className} text-2xl sm:text-3xl font-bold text-[#2e306a]`}>Our Products</h1>
-            <p className="text-xs sm:text-sm text-gray-400">{products.length} products in catalog</p>
           </div>
         </div>
       </div>
@@ -575,10 +574,6 @@ function ProductListContent() {
                     </button>
                   </span>
                 ))}
-
-                <span className="text-xs text-gray-400 hidden sm:block">
-                  {filteredProducts.length} result{filteredProducts.length !== 1 ? "s" : ""}
-                </span>
               </div>
 
               <select
@@ -760,7 +755,7 @@ function ProductListContent() {
                 onClick={() => setShowMobileFilter(false)}
                 className="w-full py-3 bg-[#00b8a2] hover:bg-[#009e8c] text-white font-bold rounded-2xl text-sm shadow-md transition"
               >
-                Apply Filters ({filteredProducts.length} Items)
+                Apply Filters
               </button>
             </div>
           </div>

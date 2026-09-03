@@ -22,6 +22,9 @@ case "ADD_ITEM": {
 
 
     case "UPDATE_QUANTITY":
+      if (action.payload.quantity <= 0) {
+        return { items: state.items.filter(item => item.id !== action.payload.id) };
+      }
       return {
         items: state.items.map(item =>
           item.id === action.payload.id

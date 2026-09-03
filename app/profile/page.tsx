@@ -34,7 +34,10 @@ import {
   RotateCcw,
   ReceiptText,
   CreditCard,
-  Phone
+  Phone,
+  Plus,
+  Edit3,
+  Trash2
 } from "lucide-react";
 import { useWishlist } from "@/app/context/whishlist/WishlistContext";
 import { useCart } from "@/app/context/cart/Cartcontext";
@@ -161,6 +164,139 @@ function ProfileContent() {
       console.error("Failed to fetch addresses:", err);
     } finally {
       setAddressesLoading(false);
+    }
+  };
+
+  // Address Modal State for Add & Edit
+  const [addressModalOpen, setAddressModalOpen] = useState(false);
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  const [addressSubmitting, setAddressSubmitting] = useState(false);
+  const [addressError, setAddressError] = useState("");
+  const [addressForm, setAddressForm] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    alternatePhone: "",
+    email: "",
+    home: "",
+    street: "",
+    landmark: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    type: "Home",
+  });
+
+  const handleOpenAddAddress = () => {
+    setEditingAddressId(null);
+    setAddressError("");
+    setAddressForm({
+      firstName: (session?.user?.name || "").split(" ")[0] || "",
+      lastName: (session?.user?.name || "").split(" ").slice(1).join(" ") || "",
+      phone: (session?.user as any)?.number || "",
+      alternatePhone: "",
+      email: session?.user?.email || "",
+      home: "",
+      street: "",
+      landmark: "",
+      city: "",
+      state: "",
+      postalCode: "",
+      type: "Home",
+    });
+    setAddressModalOpen(true);
+  };
+
+  const handleOpenEditAddress = (addr: any) => {
+    setEditingAddressId(addr._id);
+    setAddressError("");
+    setAddressForm({
+      firstName: addr.firstName || "",
+      lastName: addr.lastName || "",
+      phone: addr.phone || "",
+      alternatePhone: addr.alternatePhone || "",
+      email: addr.email || "",
+      home: addr.home || "",
+      street: addr.street || addr.address || "",
+      landmark: addr.landmark || "",
+      city: addr.city || "",
+      state: addr.state || "",
+      postalCode: addr.postalCode || "",
+      type: addr.type || "Home",
+    });
+    setAddressModalOpen(true);
+  };
+
+  const handleSaveAddress = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddressError("");
+
+    if (
+      !addressForm.lastName.trim() ||
+      !addressForm.phone.trim() ||
+      !addressForm.home.trim() ||
+      !addressForm.street.trim() ||
+      !addressForm.city.trim() ||
+      !addressForm.state.trim() ||
+      !addressForm.postalCode.trim()
+    ) {
+      setAddressError("Please fill in all required fields marked with *.");
+      return;
+    }
+
+    if (addressForm.phone.replace(/\D/g, "").length < 10) {
+      setAddressError("Please enter a valid 10-digit mobile number.");
+      return;
+    }
+
+    if (addressForm.postalCode.replace(/\D/g, "").length !== 6) {
+      setAddressError("Please enter a valid 6-digit PIN code.");
+      return;
+    }
+
+    setAddressSubmitting(true);
+    try {
+      const url = editingAddressId ? `/api/address/${editingAddressId}` : "/api/address";
+      const method = editingAddressId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...addressForm,
+          postalCode: addressForm.postalCode.replace(/\D/g, ""),
+          phone: addressForm.phone.replace(/\D/g, "").slice(-10),
+          alternatePhone: addressForm.alternatePhone ? addressForm.alternatePhone.replace(/\D/g, "").slice(-10) : "",
+          country: "India",
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setAddressModalOpen(false);
+        fetchAddresses();
+      } else {
+        setAddressError(data.message || data.error || "Failed to save address.");
+      }
+    } catch (err: any) {
+      setAddressError(err.message || "Failed to save address.");
+    } finally {
+      setAddressSubmitting(false);
+    }
+  };
+
+  const handleDeleteAddress = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this address?")) return;
+    try {
+      const res = await fetch(`/api/address/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        fetchAddresses();
+      } else {
+        alert("Failed to delete address.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting address.");
     }
   };
 
@@ -835,29 +971,101 @@ function ProfileContent() {
 
             {/* TAB 2: ADDRESSES */}
             {activeTab === "addresses" && (
-              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-4">
-                <div className="border-b border-slate-100 pb-3">
-                  <h2 className="text-base font-bold text-slate-900">Saved Addresses</h2>
-                  <p className="text-xs text-slate-500">Delivery addresses saved for checkout</p>
+              <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Saved Delivery Addresses</h2>
+                    <p className="text-xs text-slate-500">Manage your shipping addresses for seamless 1-click checkout</p>
+                  </div>
+                  <button
+                    onClick={handleOpenAddAddress}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2e306a] hover:bg-[#1e1e4d] text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer self-start sm:self-auto"
+                  >
+                    <Plus size={14} />
+                    <span>Add New Address</span>
+                  </button>
                 </div>
 
                 {addressesLoading ? (
-                  <div className="py-8 text-center text-xs text-slate-400">Loading addresses...</div>
+                  <div className="py-12 text-center text-xs text-slate-400">Loading addresses...</div>
                 ) : addresses.length === 0 ? (
-                  <p className="text-xs text-slate-400 py-6">No saved addresses found. Addresses are automatically saved during checkout.</p>
+                  <div className="py-12 text-center space-y-3">
+                    <MapPin size={32} className="text-slate-300 mx-auto" />
+                    <p className="text-xs text-slate-500 font-medium">No saved addresses found.</p>
+                    <button
+                      onClick={handleOpenAddAddress}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#2e306a] text-white text-xs font-semibold rounded-xl shadow-xs"
+                    >
+                      <Plus size={14} />
+                      <span>Add Address</span>
+                    </button>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
                     {addresses.map((addr, idx) => (
-                      <div key={idx} className="p-4 rounded-xl border border-slate-200 bg-slate-50/50 space-y-1.5 text-xs text-slate-700">
-                        <span className="font-bold text-slate-900 uppercase text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded">
-                          {addr.type || "Home"}
-                        </span>
-                        <p className="font-bold text-slate-900 text-xs pt-1">{addr.home}</p>
-                        <p>{addr.street}</p>
-                        <p>{addr.city}, {addr.state} - <b>{addr.postalCode}</b></p>
-                        <p className="text-slate-400 pt-1 flex items-center gap-1">
-                          <Phone size={11} /> {addr.phone}
-                        </p>
+                      <div
+                        key={idx}
+                        className="p-5 rounded-2xl border-2 border-slate-200 bg-slate-50/50 hover:bg-white transition space-y-3 text-xs text-slate-700 relative flex flex-col justify-between"
+                      >
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="font-bold text-slate-900 uppercase text-[10px] bg-white border border-slate-300 px-2.5 py-0.5 rounded-full">
+                              {addr.type === "Work" ? "🏢 Work" : addr.type === "Other" ? "📍 Other" : "🏠 Home"}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleOpenEditAddress(addr)}
+                                className="text-slate-500 hover:text-slate-900 p-1 rounded hover:bg-slate-100 transition"
+                                title="Edit Address"
+                              >
+                                <Edit3 size={14} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteAddress(addr._id)}
+                                className="text-rose-500 hover:text-rose-700 p-1 rounded hover:bg-rose-50 transition"
+                                title="Delete Address"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {(addr.firstName || addr.lastName) && (
+                            <p className="font-bold text-slate-900 text-sm">
+                              {`${addr.firstName || ""} ${addr.lastName || ""}`.trim()}
+                            </p>
+                          )}
+
+                          <div className="space-y-1 text-slate-700 leading-relaxed font-medium">
+                            <p className="font-semibold text-slate-900">{addr.home}</p>
+                            <p>{addr.street || addr.address}</p>
+                            {addr.landmark && (
+                              <p className="text-slate-500 text-[11px]">
+                                <span className="font-semibold text-slate-600">Landmark:</span> {addr.landmark}
+                              </p>
+                            )}
+                            <p className="font-semibold text-slate-900">
+                              {addr.city}, {addr.state} - <span className="font-mono">{addr.postalCode}</span>
+                            </p>
+                            <p className="text-[11px] text-slate-500">Country: {addr.country || "India"}</p>
+                          </div>
+                        </div>
+
+                        <div className="pt-2 border-t border-slate-200/80 flex flex-col gap-1 text-[11px]">
+                          <p className="text-slate-800 font-bold flex items-center gap-1 font-mono">
+                            <Phone size={12} className="text-slate-500" /> +91 {addr.phone}
+                          </p>
+                          {addr.alternatePhone && (
+                            <p className="text-slate-500 flex items-center gap-1 font-mono">
+                              <Phone size={12} className="text-slate-400" /> Alt: +91 {addr.alternatePhone}
+                            </p>
+                          )}
+                          {addr.email && (
+                            <p className="text-slate-500 flex items-center gap-1">
+                              <Mail size={12} className="text-slate-400" /> {addr.email}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -994,6 +1202,242 @@ function ProfileContent() {
                 <p className="text-xs text-slate-500">Tracking information is being updated by courier partner.</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add / Edit Address Modal */}
+      {addressModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <MapPin size={18} className="text-[#2e306a]" />
+                <h3 className="font-bold text-slate-900 text-base">
+                  {editingAddressId ? "Edit Delivery Address" : "Add New Delivery Address"}
+                </h3>
+              </div>
+              <button
+                onClick={() => setAddressModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {addressError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-600 text-xs rounded-xl flex items-center gap-2">
+                <AlertCircle size={15} />
+                <span>{addressError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveAddress} className="space-y-4 text-xs">
+              {/* Name */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">First Name</label>
+                  <input
+                    type="text"
+                    value={addressForm.firstName}
+                    onChange={(e) => setAddressForm({ ...addressForm, firstName: e.target.value })}
+                    placeholder="First Name"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addressForm.lastName}
+                    onChange={(e) => setAddressForm({ ...addressForm, lastName: e.target.value })}
+                    placeholder="Last Name *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+              </div>
+
+              {/* Phones */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Primary Mobile *</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-slate-500 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      required
+                      maxLength={10}
+                      value={addressForm.phone}
+                      onChange={(e) => setAddressForm({ ...addressForm, phone: e.target.value })}
+                      placeholder="10-digit number *"
+                      className="w-full border border-slate-300 rounded-r-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Alternate Phone (Optional)</label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-2.5 text-[11px] font-bold text-slate-500 bg-slate-100 border border-r-0 border-slate-300 rounded-l-xl">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={addressForm.alternatePhone}
+                      onChange={(e) => setAddressForm({ ...addressForm, alternatePhone: e.target.value })}
+                      placeholder="Optional secondary"
+                      className="w-full border border-slate-300 rounded-r-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Email (For dispatch tracking updates)</label>
+                <input
+                  type="email"
+                  value={addressForm.email}
+                  onChange={(e) => setAddressForm({ ...addressForm, email: e.target.value })}
+                  placeholder="name@example.com"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                />
+              </div>
+
+              {/* House / Flat & Street */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Flat / House No. / Building *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addressForm.home}
+                    onChange={(e) => setAddressForm({ ...addressForm, home: e.target.value })}
+                    placeholder="e.g. Flat 402, Sunshine Apts *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Street / Area / Colony *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addressForm.street}
+                    onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
+                    placeholder="e.g. 14th Main Road, Indiranagar *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+              </div>
+
+              {/* Landmark */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1">Nearby Landmark (Optional)</label>
+                <input
+                  type="text"
+                  value={addressForm.landmark}
+                  onChange={(e) => setAddressForm({ ...addressForm, landmark: e.target.value })}
+                  placeholder="e.g. Near City Hospital / Opposite Metro Pillar 120"
+                  className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                />
+              </div>
+
+              {/* City & State */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Town / City *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addressForm.city}
+                    onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })}
+                    placeholder="e.g. Mumbai *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">State *</label>
+                  <input
+                    type="text"
+                    required
+                    value={addressForm.state}
+                    onChange={(e) => setAddressForm({ ...addressForm, state: e.target.value })}
+                    placeholder="e.g. Maharashtra *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+              </div>
+
+              {/* PIN Code & Country */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Postal PIN Code *</label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    value={addressForm.postalCode}
+                    onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })}
+                    placeholder="6-digit PIN *"
+                    className="w-full border border-slate-300 rounded-xl p-2.5 text-xs focus:outline-none focus:border-[#2e306a]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 font-semibold mb-1">Country</label>
+                  <input
+                    disabled
+                    value="India 🇮🇳"
+                    className="w-full border border-slate-200 bg-slate-100 text-slate-500 rounded-xl p-2.5 text-xs font-semibold cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              {/* Address Type */}
+              <div>
+                <label className="block text-slate-700 font-semibold mb-1.5">Address Type</label>
+                <div className="flex gap-2">
+                  {[
+                    { id: "Home", label: "🏠 Home" },
+                    { id: "Work", label: "🏢 Work" },
+                    { id: "Other", label: "📍 Other" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setAddressForm({ ...addressForm, type: t.id })}
+                      className={`flex-1 py-2 px-3 rounded-xl border text-xs font-semibold transition ${
+                        addressForm.type === t.id
+                          ? "bg-[#2e306a] text-white border-[#2e306a]"
+                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAddressModalOpen(false)}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addressSubmitting}
+                  className="px-5 py-2 bg-[#2e306a] hover:bg-[#1e1e4d] text-white rounded-xl font-bold transition shadow-xs disabled:opacity-50 cursor-pointer"
+                >
+                  {addressSubmitting ? "Saving..." : editingAddressId ? "Update Address" : "Save Address"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
